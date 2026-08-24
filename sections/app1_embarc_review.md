@@ -1,10 +1,12 @@
-# Appendix: embARC and Content Authenticity Provenance (CAP)
+# Appendix: embARC and Content Authenticity and Provenance (CAP)
 
 ## An Evaluation of embARC and CAP metadata
 
 embARC (Metadata Embedded for Archival Content) is the FADGI-managed, open-source, cross-platform application for auditing, validating, correcting, and extending embedded metadata in DPX and MXF files. As part of this report the authors have examined embARC as an implementation of content authenticity and provenance features and have considered what opportunities exist to expand embARC's functionality in that realm. This appendix documents the basis for those features, the options considered, the recommended approach, and implementation considerations.
 
-embARC plays a specific role in preservation workflows surrounding the metadata embedded in DPX image sequences, generally coming from the output of a digital film scanner. DPX image sets can often be represented by hundreds of thousands of DPX image files for a feature film. As DPX image data is uncompressed each image can potentially require 50MB per image, or several terabytes per sequence, making DPX implementations often an outlier in media files in regards to per file count and total data size. The DPX header (as defined in SMPTE ST 268-1:2014 and ST 268-2:2018) carries technical and administrative metadata about the film scan and source material. The DPX metadata is stored in every file, generally containing identical data pertaining to the context of their creation. Though some fields are unique per DPX file in a sequence, such as incrementing image index numbers and embedded file names, most DPX metadata is redundantly stored across all DPX files in the sequence. FADGI has published [guidelines](https://www.digitizationguidelines.gov/guidelines/digitize-DPXembedding.html) that recommend how those fields should be populated to document digitization provenance. embARC audits DPX headers against both SMPTE conformance rules and the FADGI guidelines, and corrects non-conformant fields in batch across an entire sequence.
+Because SMPTE has a current project to map MXF to C2PA, this report is not exploring MXF workflows at this time. FADGI is unaware of similar SMPTE efforts for C2PA mapping for DPX.
+
+embARC plays a specific role in preservation workflows surrounding the metadata embedded in DPX image sequences, generally coming from the output of a digital film scanner. DPX image sets can often be represented by hundreds of thousands of DPX image files for a feature film. As DPX image data is uncompressed each image can potentially require 50MB per image, or several terabytes per sequence, making DPX implementations often an outlier in media files in regards to per file count and total data size. The DPX header (as defined in SMPTE ST 268-1:2014 and ST 268-2:2023[extensions for High Dynamic Range and Wide Color Gamut]) carries technical and administrative metadata about the film scan and source material. The DPX metadata is stored in every file, generally containing identical data pertaining to the context of their creation. Though some fields are unique per DPX file in a sequence, such as incrementing image index numbers and embedded file names, most DPX metadata is redundantly stored across all DPX files in the sequence. FADGI has published [guidelines](https://www.digitizationguidelines.gov/guidelines/digitize-DPXembedding.html) that recommend how those fields should be populated to document digitization provenance. embARC audits DPX headers against both SMPTE conformance rules and the FADGI guidelines and corrects non-conformant fields in batch across an entire sequence.
 
 The FADGI guidelines for DPX embedded metadata (first published 2016, last updated April 2019) extend SMPTE ST 268 in two ways. First, they specify recommended values and clarify formatting conventions for fields that SMPTE defines structurally but leaves expression styles to implementers. Second, FADGI defines the Field 75/76 user-defined data pair as a structured digitization process history, inspired by the Broadcast WAV Coding History field.
 
@@ -38,37 +40,37 @@ O=DPXv2, W=10-bit, R=2K, M=RGB Log
 
 ## C2PA and the DPX Format Support Problem
 
-The C2PA specification defines embedding mechanisms for a specific set of formats such as JPEG, PNG, AVIF, HEIC, WebP, TIFF, MP4, MOV, PDF, WAV, MP3, and others, but not DPX. While SMPTE ST 268 does define a user-defined metadata area (Field 76), there is no standardized mechanism for embedding a JUMBF manifest store in this user section. Additionally most DPX files generated from a scanner reserve much less space for Field 76 or possibly no space at all, thus potentially adding C2PA data into Field 76 could require an existing DPX file to be rewritten. When this data rewriting is scaled over a full DPX sequence the time and data size of such a metadata addition can be far more burdensome than it would be for any of the other mentioned formats.
+The C2PA specification does not define an embedding mechanism for DPX, at least as far as version 2.4. While SMPTE ST 268 does define a user-defined metadata area (Field 76), there is no standardized mechanism for embedding a JUMBF Manifest store in this user section. Additionally most DPX files generated from a scanner reserve much less space for Field 76 or possibly no space at all, thus potentially adding C2PA data into Field 76 could require an existing DPX file to be rewritten. When this data rewriting is scaled over a full DPX sequence the time and data size of such a metadata addition can be far more burdensome than it would be for any of the other mentioned formats.
 
 C2PA supports a more reasonable approach for DPX in the possibility of storing Manifest Stores external to the asset they describe, in the form of sidecar files.
 
 ### Why Embedding C2PA Data in DPX Files Is Impractical
 
-embARC's recent refactor established that corrections are applied by rewriting only the specific header byte ranges that need to change, leaving the image data region untouched. Embedding a JUMBF manifest store in the DPX user-defined data area would require writing to a region of the file outside the specific header bytes being corrected, affecting byte offsets and potentially requiring validation of the full file structure. For a 100,000-frame sequence at roughly 50MB per frame, any approach that requires extending the metadata header can require terabytes of I/O for what would otherwise be a basic metadata operation.
+Initiated in 2026, embARC's refactor established that corrections are applied by rewriting only the specific header byte ranges that need to change, leaving the image data region untouched. Embedding a JUMBF Manifest store in the DPX user-defined data area would require writing to a region of the file outside the specific header bytes being corrected, affecting byte offsets and potentially requiring validation of the full file structure. For a 100,000-frame sequence at roughly 50MB per frame, any approach that requires extending the metadata header can require terabytes of I/O for what would otherwise be a basic metadata operation.
 
-There is also a challenge with C2PA manifest sizing. A collection-level C2PA manifest for 100,000 files could require 7-11MB of CBOR-encoded assertion data. Distributing manifest content across 100,000 separate file headers would require a different manifest per file, expanding every file in the sequence. A sidecar C2PA approach would achieve the same provenance goals without the burdensome costs associated with embedding such data.
+There is also a challenge with C2PA Manifest sizing. A collection-level C2PA Manifest for 100,000 files could require 7-11MB of [CBOR](https://www.loc.gov/preservation/digital/formats/fdd/fdd000647.shtml)-encoded assertion data. Distributing Manifest content across 100,000 separate file headers would require a different Manifest per file, expanding every file in the sequence. A sidecar C2PA approach would achieve the same provenance goals without the burdensome costs associated with embedding such data.
 
 ## 4. Options Considered
 
 Four options were considered for adding C2PA support to DPX.
 
-**Option 1: Per-file sidecar manifests.** Here a separate `.c2pa` file could be generated alongside each DPX file, with the same base filename. Each sidecar could contain a C2PA manifest with a `c2pa.hash.data` assertion hashing the full DPX file (or the image data portion with appropriate exclusions), a `c2pa.actions` assertion recording what embARC did, and claim generator information identifying embARC. For a potentially 100,000 file DPX sequence this would produce 100,000 sidecar files, doubling the file count of the directory. Each sidecar would require an individual signing operation. Such an approach would be specification compliant but operationally burdensome at scale.
+**Option 1: Per-file sidecar Manifests.** Here a separate `.c2pa` file could be generated alongside each DPX file, with the same base filename. Each sidecar could contain a C2PA Manifest with a `c2pa.hash.data` assertion hashing the full DPX file (or the image data portion with appropriate exclusions), a `c2pa.actions` assertion recording what embARC did, and claim generator information identifying embARC. For a potentially 100,000 file DPX sequence this would produce 100,000 sidecar files, doubling the file count of the directory. Each sidecar would require an individual signing operation. Such an approach would be specification compliant but operationally burdensome at scale.
 
-**Option 2: Sequence-level sidecar manifest using collection data hashing.** Here a single .c2pa sidecar could be generated for the entire DPX sequence. The manifest uses the c2pa.hash.collection.data assertion (see [C2PA spec §18.8](https://spec.c2pa.org/specifications/specifications/2.4/specs/C2PA_Specification.html#_collection_data_hash)), which hashes each file in the sequence individually and stores the results in a single signed manifest. Per the C2PA specification: "Each file in the collection shall be hashed individually using the specific hash algorithm defined in the alg field. The resultant hash value shall be stored in the hash field of the uri-hashed-data-map associated with the uri to the file."
+**Option 2: Sequence-level sidecar Manifest using collection data hashing.** Here a single .c2pa sidecar could be generated for the entire DPX sequence. The Manifest uses the c2pa.hash.collection.data assertion (see [C2PA spec §18.8](https://spec.c2pa.org/specifications/specifications/2.4/specs/C2PA_Specification.html#_collection_data_hash)), which hashes each file in the sequence individually and stores the results in a single signed Manifest. Per the C2PA specification: "Each file in the collection shall be hashed individually using the specific hash algorithm defined in the alg field. The resultant hash value shall be stored in the hash field of the uri-hashed-data-map associated with the uri to the file."
 
-In this approach, there is one signing operation for the entire sequence, but one hash computation per file. However, here the C2PA specification provides a significant constraint. The c2pa.hash.collection.data assertion hashes the entire content of each file as the specification says "the hash shall be over all bytes (from 0 to n) of the content item — no exceptions." The uri-hashed-data-map entries carry only the fields uri, hash, and optional size, dc:format, and data_types; however, there are no per-entry exclusions for the hashing. This is a significant difference from the single-file c2pa.hash.data assertion, which does support an exclusions array of byte-range maps to skip over defined portions of a file such as an embedded manifest or a format-specific header.
+In this approach, there is one signing operation for the entire sequence, but one hash computation per file. **However, here the C2PA specification provides a significant constraint.** The c2pa.hash.collection.data assertion hashes the entire content of each file as the specification says "the hash shall be over all bytes (from 0 to n) of the content item — no exceptions." The uri-hashed-data-map entries carry only the fields uri, hash, and optional size, dc:format, and data_types; however, there are no per-entry exclusions for the hashing. This is a significant difference from the single-file c2pa.hash.data assertion, which does support an exclusions array of byte-range maps to skip over defined portions of a file such as an embedded Manifest or a format-specific header.
 
-This means the DPX header cannot be excluded from the hash scope within a collection data hash assertion. As a result, any embARC operation that modifies DPX header fields will invalidate the hash for each frame, and those frames' entries in the manifest must be recomputed and the manifest re-signed after each embARC modification.
+This means the DPX header cannot be excluded from the hash scope within a collection data hash assertion. As a result, any embARC operation that modifies DPX header fields will invalidate the hash for each frame, and those frames' entries in the Manifest must be recomputed and the Manifest re-signed after each embARC modification.
 
-If header-exclusion is a hard requirement at the format level, the only C2PA-compliant path is c2pa.hash.data with per-file exclusions, which means one manifest (or one manifest ingredient) per DPX frame. Issues undert this scenario are detailed under Option 3.
+If header-exclusion is a hard requirement at the format level, the only C2PA-compliant path is c2pa.hash.data with per-file exclusions, which means one Manifest (or one Manifest ingredient) per DPX frame. Issues under this scenario are detailed under Option 3.
 
-**Option 3: Propose DPX as a C2PA-supported format.** FADGI or other entities could consider proposing including DPX in the C2PA specification to define a mechanism for embedding C2PA data. DPX's user-defined data area could accommodate a JUMBF manifest store. However, such an approach would be burdensome if it required extending the header to increase the user data section, so an efficient implementation of such an approach would require coordinating with the film scanners or tools that initiate the DPX file to reserve a sizable header section to hold the manifest.
+**Option 3: Propose DPX as a C2PA-supported format.** FADGI or other entities could consider proposing including DPX in the C2PA specification to define a mechanism for embedding C2PA data. DPX's user-defined data area could accommodate a JUMBF Manifest store. However, such an approach would be burdensome if it required extending the header to increase the user data section, so an efficient implementation of such an approach would require coordinating with the film scanners or tools that initiate the DPX file to reserve a sizable header section to hold the Manifest.
 
-**Option 4: Non-standard embedding in the user-defined data area.** embARC could write a JUMBF manifest store or a URI pointing to a manifest into the DPX user-defined data area as an embARC/FADGI-specific convention, without waiting for formal standardization. Beyond the operational and input/output costs described above, this creates an informal implementation that may conflict with any future formal standardization. Additionally such an approach would be largely undiscoverable by other tools.
+**Option 4: Non-standard embedding in the user-defined data area.** embARC could write a JUMBF Manifest store or a URI pointing to a Manifest into the DPX user-defined data area as an embARC/FADGI-specific convention, without waiting for formal standardization. Beyond the operational and input/output costs described above, this creates an informal implementation that may conflict with any future formal standardization. Additionally such an approach would be largely undiscoverable by other tools.
 
 ## 5. Recommended Approach: Sequence-Level Sidecar (Option 2)
 
-A sequence-level sidecar approach using `c2pa.hash.collection.data` seems to be the most intuitive and efficient; however the lack of byte range exclusions for hashing within `c2pa.hash.collection.data` makes hard-binding a challenge without costly hash recomputations at each metadata edit. As the C2PA specification is currently evolving there may be some opportunity to collaborate with C2PA maintainers on clarifying a strategy that balances authenticity and efficiency. Option 2 also maps naturally to how DPX sequences are managed; as sequences rather than as individual files. The approach also produces one manageable authenticity document per sequence and is fully compliant to the related specifications and recommendations of SMPTE ST 268, the FADGI guidelines for DPX embedded metadata, and the C2PA Technical Specifications. This approach also permits per-file integrity verification without a requirement of per-file signing. Additionally this approach would not require any change to embARC's byte-range editing methodology as the sidecar C2PA file would be written alongside the sequence rather than into the DPX files.
+**A sequence-level sidecar approach using `c2pa.hash.collection.data` seems to be the most intuitive and efficient; however the lack of byte range exclusions for hashing within `c2pa.hash.collection.data` makes hard-binding a challenge without costly hash recomputations at each metadata edit.** As the C2PA specification is currently evolving there may be some opportunity to collaborate with C2PA maintainers on clarifying a strategy that balances authenticity and efficiency. Option 2 also maps naturally to how DPX sequences are managed; as sequences rather than as individual files. The approach also produces one manageable authenticity document per sequence and is fully compliant to the related specifications and recommendations of SMPTE ST 268, the FADGI guidelines for DPX embedded metadata, and the C2PA Technical Specifications. This approach also permits per-file integrity verification without a requirement of per-file signing. Additionally this approach would not require any change to embARC's byte-range editing methodology as the sidecar C2PA file would be written alongside the sequence rather than into the DPX files.
 
 If hard-binding is a requirement to C2PA feature development in embARC that option 2 with a coordinated resolution of the hard-binding limits would be the recommendation, else consideration could be given to the other specification compliant options.
 
@@ -84,7 +86,7 @@ If hard-binding is a requirement to C2PA feature development in embARC that opti
   Example_Film_Reel1.c2pa
 ```
 
-A simplified representation of the manifest structure (actual encoding is CBOR/JUMBF):
+A simplified representation of the Manifest structure (actual encoding is CBOR/JUMBF):
 
 ```json
 {
@@ -134,13 +136,13 @@ A simplified representation of the manifest structure (actual encoding is CBOR/J
 
 ### The Ingredients Problem at Scale
 
-C2PA's ingredients model provides the methods to document custody chains. A new manifest can reference prior manifests from source materials as ingredients, preserving a verifiable provenance chain across multiple operations. For DPX sequences, this creates a specific problem.
+C2PA's ingredients model provides the methods to document custody chains. A new Manifest can reference prior Manifests from source materials as ingredients, preserving a verifiable provenance chain across multiple operations. For DPX sequences, this creates a specific problem.
 
-A 2-hour feature film at 24fps produces approximately 172,800 individual DPX frames. If each file were treated as a C2PA ingredient in a subsequent operation, as the C2PA specification implies, then the resulting manifest would contain 172,800 ingredient references. While the specification supports this architecturally, it can become operationally unwieldy and produces impractically-sized manifests.
+A 2-hour feature film at 24fps produces approximately 172,800 individual DPX frames. If each file were treated as a C2PA ingredient in a subsequent operation, as the C2PA specification implies, then the resulting Manifest would contain 172,800 ingredient references. While the specification supports this architecturally, it can become operationally unwieldy and produces impractically-sized Manifests.
 
-A practical alternative for consideration is to treat the prior sequence-level C2PA sidecar as a single ingredient. If a DPX sequence already has a sequence-level sidecar from a prior embARC operation, a subsequent operation could reference that sidecar as a single ingredient rather than referencing each frame individually. This method could model the semantics correctly, where the ingredient is the sequence rather than its individual frames.
+**A practical alternative for consideration is to treat the prior sequence-level C2PA sidecar as a single ingredient.** If a DPX sequence already has a sequence-level sidecar from a prior embARC operation, a subsequent operation could reference that sidecar as a single ingredient rather than referencing each frame individually. This method could model the semantics correctly, where the ingredient is the sequence rather than its individual frames.
 
-Such an approach requires that the prior operation must have produced a sequence-level sidecar to reference. For existing collections with no prior C2PA history, the ingredients chain simply begins with the first embARC operation that generates a manifest.
+Such an approach requires that the prior operation must have produced a sequence-level sidecar to reference. For existing collections with no prior C2PA history, the ingredients chain simply begins with the first embARC operation that generates a Manifest.
 
 **Advantages of the ingredient model:**
 - Preserves a verifiable chain of custody across multiple operations on the same DPX sequence.
@@ -148,7 +150,7 @@ Such an approach requires that the prior operation must have produced a sequence
 - Scales the C2PA's design efficiently for multi-step workflows.
 
 **Cons at DPX scale:**
-- If implemented as per-file ingredients, the process can produce unmanageable manifests for long-form content.
+- If implemented as per-file ingredients, the process can produce unmanageable Manifests for long-form content.
 - Requires more consistent sidecar management discipline.
 - Nearly doubles the already substantial file counts involved in DPX sequences.
 - Chains that span format migrations (DPX to ProRes, for example) require C2PA support in both formats or a sidecar-to-embedded transition at the point of migration.
@@ -172,7 +174,7 @@ A custom FADGI-defined action, such as `gov.digitizationguidelines.metadata_upda
 - `c2pa.edited`: implies content modification which is out of scope to embARC.
 - `c2pa.transcoded`: implies format or encoding conversion which is out of scope to embARC.
 - `c2pa.color_adjustments`: implies pixel modifications that are out of scope to embARC.
-- `c2pa.created`: embARC does not create DPX files, but if the DPX creator generated a sequence-level C2PA manifest sidecar, then embARC could document subsequent actions there. Additionally, initializing a C2PA manifest at the point of creation would facilitate more efficient hashing.
+- `c2pa.created`: embARC does not create DPX files, but if the DPX creator generated a sequence-level C2PA Manifest sidecar, then embARC could document subsequent actions there. Additionally, initializing a C2PA Manifest at the point of creation would facilitate more efficient hashing.
 
 Action parameters should always record `image_data_modified: false` to make explicit that only header data was changed.
 
@@ -180,40 +182,40 @@ Action parameters should always record `image_data_modified: false` to make expl
 
 embARC can participate in C2PA in two distinct roles.
 
-**As a claim generator:** As embARC performs a metadata operation on a DPX sequence, it could generate a C2PA sidecar manifest documenting the action, which fields were modified, and which files were affected, with each file individually hashed. The manifest could also be signed with the institution's signing credential. This is the provenance-creating role and requires decisions about signing infrastructure and credential management.
+**As a claim generator:** As embARC performs a metadata operation on a DPX sequence, it could generate a C2PA sidecar Manifest documenting the action, which fields were modified, and which files were affected, with each file individually hashed. The Manifest could also be signed with the institution's signing credential. This is the provenance-creating role and requires decisions about signing infrastructure and credential management.
 
-**As a manifest consumer:** embARC could read and display existing C2PA sidecar manifests associated with DPX sequences, presenting the provenance history alongside its assessment results. This allows operators to see not just the current state of the header metadata but the history of documented operations. This role requires no signing credential.
+**As a Manifest consumer:** embARC could read and display existing C2PA sidecar Manifests associated with DPX sequences, presenting the provenance history alongside its assessment results. This allows operators to see not just the current state of the header metadata but the history of documented operations. This role requires no signing credential.
 
-The two roles could be considered and/or implemented separately. Displaying existing C2PA manifests is certainly the simpler feature to develop and could be implemented first as a read-only feature in an initial release. Generating and signing manifests could follow, after institutional signing infrastructure and naming conventions are established.
+The two roles could be considered and/or implemented separately. Displaying existing C2PA Manifests is certainly the simpler feature to develop and could be implemented first as a read-only feature in an initial release. Generating and signing Manifests could follow, after institutional signing infrastructure and naming conventions are established.
 
 ## Implementation Notes and Release Considerations
 
 The current development plans for embARC include at least one major release for all platforms and builds (Windows and Mac, CLI and GUI) with regression testing to demonstrate application stability and external user testing for overall functionality feedback. Minor versions follow as needed for bug fixes, security patches, and limited improvements.
 
-Potential read-only manifest read and display features would be a contained change that can be regression-tested against existing audit and correction behavior with minimal risk of interference. The manifest generator feature would be an addition to the existing embARC workflows and can be controlled via a configuration option so that existing workflows that do not use C2PA are unaffected. Neither feature requires changes to embARC's byte-range editing model, which is core to its efficiency and for reducing risk to image data.
+Potential read-only Manifest read and display features would be a contained change that can be regression-tested against existing audit and correction behavior with minimal risk of interference. The Manifest generator feature would be an addition to the existing embARC workflows and can be controlled via a configuration option so that existing workflows that do not use C2PA are unaffected. Neither feature requires changes to embARC's byte-range editing model, which is core to its efficiency and for reducing risk to image data.
 
 ## A Draft Proposal of embARC Command Line Options for C2PA
 
-embARC's CLI currently supports batch metadata header auditing and updating. The following proposed flags extend that interface to support both C2PA claim generation and manifest consumption, with no impact on existing option behavior.
+embARC's CLI currently supports batch metadata header auditing and updating. The following proposed flags extend that interface to support both C2PA claim generation and Manifest consumption, with no impact on existing option behavior.
 
 ### Options for C2PA Manifest Consumer
 
 --c2pa-read
-    Read and display any C2PA sidecar manifest associated with the input DPX
+    Read and display any C2PA sidecar Manifest associated with the input DPX
     sequence. Presents provenance history alongside embARC's standard audit
     results.
 
 --c2pa-read-format=text|json|xml
-    Output format for the manifest report produced by --c2pa-read.
+    Output format for the Manifest report produced by --c2pa-read.
       text   Human-readable summary (default)
-      json   Machine-readable JSON representation of the manifest
+      json   Machine-readable JSON representation of the Manifest
       xml    XML representation suitable for integration with embARC's
              existing XML export pipeline
 
 --c2pa-validate
     Verify the cryptographic signature and hash integrity of an existing C2PA
     sidecar against the current state of the DPX sequence files. Reports
-    which files pass or fail their hash check and whether the manifest
+    which files pass or fail their hash check and whether the Manifest
     signature is valid. Exit code is non-zero if any file fails verification and the verification status is summarized.
 
 --c2pa-sidecar=<path>
@@ -225,14 +227,14 @@ embARC's CLI currently supports batch metadata header auditing and updating. The
 
 ```shell
 --c2pa-generate
-    Generate a sequence-level C2PA sidecar manifest (.c2pa) after completing
-    any metadata audit or correction operation. The manifest is written
+    Generate a sequence-level C2PA sidecar Manifest (.c2pa) after completing
+    any metadata audit or correction operation. The Manifest is written
     alongside the DPX sequence directory. Requires --c2pa-sign or a configured
     signing credential in the embARC configuration file.
 
 --c2pa-sign=<credential_path>
     Path to the signing credential (PEM-encoded certificate and private key, or
-    reference to a KMS/HSM endpoint) used to sign the generated manifest.
+    reference to a KMS/HSM endpoint) used to sign the generated Manifest.
     Required when --c2pa-generate is specified and no default credential is
     configured.
 
@@ -260,12 +262,12 @@ embARC's CLI currently supports batch metadata header auditing and updating. The
 
 --c2pa-ingredient=<sidecar_path>
     Reference an existing C2PA sidecar from a prior embARC operation as an
-    ingredient in the new manifest. Enables chain-of-custody documentation
+    ingredient in the new Manifest. Enables chain-of-custody documentation
     across multiple operations on the same sequence. If omitted, a new chain is
     started.
 
 --c2pa-no-sign
-    Generate an unsigned manifest structure for review or testing. The
+    Generate an unsigned Manifest structure for review or testing. The
     resulting .c2pa file is not valid for verification but can be inspected
     before committing to a signing operation.
 
