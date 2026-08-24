@@ -45,7 +45,7 @@ This is a structured set of observations against the six TCR4CAP assessment crit
 | Substantiation   | Whether provenance claims can be verified against external anchors     |
 | Interoperability | License, standards basis, and breadth of implementation                |
 
-## 2. Tools Registry
+## Tools Registry
 
 Tools are software applications, libraries, SDKs, online services, or reference registries relevant to content authenticity and provenance workflows.
 
@@ -114,7 +114,7 @@ The degree to which the tool supports the C2PA specification, expressed as a fun
 | `none-official`  | No official C2PA support; experimental forks may exist               |
 | `none`           | No C2PA support                                                      |
 
-## 3. Formats Registry
+## Formats Registry
 Formats are file formats or metadata standards relevant to content authenticity and provenance. This includes container formats (BWF, MP4), image formats (JPEG, PNG), and metadata formats (XMP, PREMIS, BagIt).
 
 ### Type
@@ -185,7 +185,7 @@ A format may support C2PA delivery via one or more modes. Each mode has a `type`
 ### Mechanisms
 A list of cross-references to entries in the Mechanisms registry that describe how metadata is stored in or alongside this format. Each link resolves to the named mechanism's detail page.
 
-## 4. Mechanisms Registry
+## Mechanisms Registry
 
 Mechanisms are the specific technical methods by which metadata is stored in, attached to, or associated with a media asset. Since many formats rely on similar methods to store this data, mechanisms are described separately from formats with a relationship. Note also how the C2PA technical specifications group supported formats together based on shared mechanisms.
 
