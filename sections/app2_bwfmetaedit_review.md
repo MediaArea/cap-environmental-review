@@ -1,8 +1,8 @@
-# Appendix: BWF MetaEdit and Content Authenticity Provenance (CAP)
+# Appendix: BWF MetaEdit and Content Authenticity and Provenance (CAP)
 
 ## An Evaluation of BWF MetaEdit and CAP Metadata
 
-BWF MetaEdit is the FADGI-managed, open-source, cross-platform application for importing, editing, embedding, and exporting metadata in Broadcast WAVE Format (BWF) audio files. BWF MetaEdit supports editing the embedded metadata elements of the bext (Broadcast Extension) chunk as defined by EBU Technical Document 3285, LIST-INFO chunks, the cues chunk, aXML chunk, iXML chunk, and a selection of others. BWF MetaEdit integrates a number of metadata policies and recommendations (particularly the FADGI Guidelines for Embedded Metadata in Broadcast WAVE Files) and permits to user to select which policies to adhere to. Unlike DPX sequences, which may span hundreds of thousands of individual image files, a BWF audio file is a single self-contained file, making C2PA integration more feasible. The C2PA Technical Specifications also define how to embed C2PA manifests into a BWF file.
+BWF MetaEdit is an open-source, cross-platform application for importing, editing, embedding, and exporting metadata in Broadcast WAVE Format (BWF) audio files. BWF MetaEdit supports editing the embedded metadata elements of the bext (Broadcast Extension) chunk as defined by EBU Technical Document 3285, LIST-INFO chunks, the cues chunk, aXML chunk, iXML chunk, and a selection of others. BWF MetaEdit integrates a number of metadata policies and recommendations (particularly the FADGI Guidelines for Embedded Metadata in Broadcast WAVE Files) and permits the user to select which policies to adhere to. Unlike DPX sequences, which may span hundreds of thousands of individual image files, a BWF audio file is a single self-contained file, making C2PA integration more feasible. The C2PA Technical Specifications also define how to embed C2PA Manifests into a BWF file.
 
 ## BWF's Embedded Metadata and Provenance Fields
 
@@ -22,29 +22,29 @@ BWF MetaEdit also supports evaluating and embedding an MD5 checksum of the audio
 
 ## C2PA and the WAV Format
 
-Unlike DPX, WAV (and by extension BWF) is a C2PA-supported format. The C2PA Technical Specification defines an embedding mechanism for WAV files, allowing a JUMBF manifest store to be embedded directly in the file.
+WAV (and by extension BWF) is a C2PA-supported format. The C2PA Content Credentials Technical Specification defines an embedding mechanism for WAV files, allowing a JUMBF Manifest store to be embedded directly in the file.
 
-BWF MetaEdit's current architecture applies metadata edits by rewriting the metadata chunks in place or, moving the metadata chunk to the end of the file when more space is needed, or, in certain cases, by rewriting the full file. The last option is generally avoidable as a full file rewrite significantly increase the amount of time for a metadata operation in BWF MetaEdit, but if a user opts to follow an EBU recommendation that the bext chunk precede the data chunk (selected via a preference setting) then oftentimes a full rewrite of the file is required. An embedded C2PA manifest is sensitive to any file rewrite, since the manifest's hard-binding hash covers a defined byte range of the file. Any subsequent bext edit that rewrites the file would invalidate a previously embedded manifest unless the manifest is regenerated as part of that operation.
+BWF MetaEdit's current architecture applies metadata edits by rewriting the metadata chunks in place or, moving the metadata chunk to the end of the file when more space is needed, or, in certain cases, by rewriting the full file. The last option is generally avoidable as a full file rewrite significantly increase the amount of time for a metadata operation in BWF MetaEdit, but if a user opts to follow an EBU recommendation that the bext chunk precede the data chunk (selected via a preference setting) then oftentimes a full rewrite of the file is required. An embedded C2PA Manifest is sensitive to any file rewrite, since the Manifest's hard-binding hash covers a defined byte range of the file. Any subsequent bext edit that rewrites the file would invalidate a previously embedded Manifest unless the Manifest is regenerated as part of that operation.
 
 ## Options Considered
 
-**Option 1: Embedded C2PA manifest in the WAV JUMBF box.** Since WAV is a supported C2PA format, BWF MetaEdit could embed a full JUMBF manifest store directly in the file. This is specification-compliant and allows any C2PA-capable validator to verify the file without requiring a sidecar. The challenge here would be that any metadata edit to the BWF file that would require a rewrite the data chunk (and subsequently adjust the byte offset for the data chunk) would require that the exclusion ranges be recalculated even if the hash of the audio data chunk did not change. BWF MetaEdit's own MD5 chunk feature anticipates this pattern (metadata edits don't affect the audio data chunk, so the MD5 stays valid), but a C2PA hash for the audio data of the file would also have to properly manage byte exclusion ranges to clarify where the audio data is. A potential version of BWF MetaEdit with features to embed and maintain C2PA manifests could include information to the user on the consequences of editing metadata within BWF files while attempting to adhere to the EBU policy to store the bext chunk before the data chunk.
+**Option 1: Embedded C2PA Manifest in the WAV JUMBF box.** Since WAV is a supported C2PA format, BWF MetaEdit could embed a full JUMBF Manifest store directly in the file. This is Content Credential specification-compliant and allows any C2PA-capable validator to verify the file without requiring a sidecar. The challenge here would be that any metadata edit to the BWF file that would require a rewrite the data chunk (and subsequently adjust the byte offset for the data chunk) also would require that the exclusion ranges be recalculated even if the hash of the audio data chunk did not change. BWF MetaEdit's own MD5 chunk feature anticipates this pattern (metadata edits don't affect the audio data chunk, so the MD5 stays valid), but a C2PA hash for the audio data of the file would also have to properly manage byte exclusion ranges to clarify where the audio data is. A potential version of BWF MetaEdit with features to embed and maintain C2PA Manifests could include information to the user on the consequences of editing metadata within BWF files while attempting to adhere to the EBU policy to store the bext chunk before the data chunk.
 
 The C2PA Technical Specification requires that the C2PA chunk be placed last within the overall RIFF chunk of the BWF file. This implies that any metadata edit which requires additional space than what is stored would require BWF MetaEdit to both rewrite the full C2PA chunk and update the byte exclusion ranges.
 
-With this option, BWF MetaEdit could also manage a preference on whether a metadata edit should be noted in an existing C2PA chunk or not. For example, for a BWF with embedded C2PA, a user could edit a bext field (if not requiring a new offset for the data chunk) and the C2PA data could still be verified as per its signature and hard binding to the audio data. However, to participate fully in the provenance chain and authenticity features of C2PA, BWF MetaEdit should add claims to the C2PA manifest to document its action to modify metadata. It is recommended that BWF MetaEdit's claim generation be a feature that can be disabled or enabled.
+With this option, BWF MetaEdit could also manage a preference on whether a metadata edit should be noted in an existing C2PA chunk or not. For example, for a BWF with embedded C2PA, a user could edit a bext field (if not requiring a new offset for the data chunk) and the C2PA data could still be verified as per its signature and hard binding to the audio data. However, to participate fully in the provenance chain and authenticity features of C2PA, BWF MetaEdit should add claims to the C2PA Manifest to document its action to modify metadata. It is recommended that BWF MetaEdit's claim generation be a feature that can be disabled or enabled.
 
-For WAV files, C2PA uses a c2pa.hash.data hard binding with byte-range exclusions expressed as absolute (start position and length in bytes) offsets into the file. When BWF MetaEdit edits the bext chunk and bext is positioned before the data chunk (the EBU R85 default), any change to bext's size could shift the data chunk byte offset, invalidating the exclusion ranges in an existing manifest even though the audio bytes themselves are unchanged. In this configuration, the hash must be recomputed with updated exclusion ranges after each bext edit.
+For WAV files, C2PA uses a c2pa.hash.data hard binding with byte-range exclusions expressed as absolute (start position and length in bytes) offsets into the file. When BWF MetaEdit edits the bext chunk and bext is positioned before the data chunk (the EBU R85 default), any change to bext's size could shift the data chunk byte offset, invalidating the exclusion ranges in an existing Manifest even though the audio bytes themselves are unchanged. In this configuration, the hash must be recomputed with updated exclusion ranges after each bext edit.
 
-Unfortunately even if bext is positioned after the data chunk (BWF MetaEdit's optional 'Place new or expanded BEXT or LIST-INFO chunks at the end of the file' setting), any extension of the file to fit metadata edits would generate bytes not covered by prior exclusion ranges even if the data chunk's maintains the same offset and data. For example a 2,000 byte BWF file, may include an exclusion range of 0-512 to include the RIFF header, fmt chunk, and a bext chunk, and then another exclusion range of 1700-2000 to exclude an existing C2PA chunk that follows the data chunk. If a BWF MetaEdit operation needs to extend the bext chunk, the file would be rewritten by voiding the existing bext chunk (by writing 'junk' or 'skip' over the 'bext' chunk identifier) and then to add a new bext chunk to the end and then rewrite the C2PA chunk after that new bext chunk since C2PA requires that the C2PA chunk be last in order. With such a BWF MetaEdit operation the file size would increase beyond 2,000 bytes and any new bytes would fall outside the original C2PA's exclusion ranges and thus fail verification. This could be resolved if C2PA exclusion ranges could incorporate an end of file (EOF) marking instead of a specific offset number, but such relative EOF expressions are not currently supported in C2PA exclusion ranges. Another strategy to avoid recalculating or voiding exclusion ranges would be to reserve sufficient space in BWF files to accommodate extensions, but this can also lead to wasted space.
+Unfortunately even if bext is positioned after the data chunk (BWF MetaEdit's optional 'Place new or expanded BEXT or LIST-INFO chunks at the end of the file' setting), any extension of the file to fit metadata edits would generate bytes not covered by prior exclusion ranges even if the data chunk's maintains the same offset and data. For example a 2,000 byte BWF file may include an exclusion range of 0-512 to include the RIFF header, fmt chunk, and a bext chunk, and then another exclusion range of 1700-2000 to exclude an existing C2PA chunk that follows the data chunk. If a BWF MetaEdit operation needs to extend the bext chunk, the file would be rewritten by voiding the existing bext chunk (by writing 'junk' or 'skip' over the 'bext' chunk identifier) and then to add a new bext chunk to the end and then rewrite the C2PA chunk after that new bext chunk since C2PA requires that the C2PA chunk be last in order. With such a BWF MetaEdit operation the file size would increase beyond 2,000 bytes and any new bytes would fall outside the original C2PA's exclusion ranges and thus fail verification. **This could be resolved if C2PA exclusion ranges could incorporate an end of file (EOF) marking instead of a specific offset number, but such relative EOF expressions are not currently supported in C2PA exclusion ranges. Another strategy to avoid recalculating or voiding exclusion ranges would be to reserve sufficient space in BWF files to accommodate extensions, but this can also lead to wasted space.**
 
-**Option 2: WAV sidecar manifest.** A sidecar with the audio data hashing keeps the original manifest cryptographically valid across bext edits (the audio bytes it bound to are unchanged), but C2PA's provenance model expects each editing action to be documented by a new signed update manifest. So while the original manifest doesn't break, a fully C2PA-compliant workflow still produces a new update manifest, and recomputes the audio-data hash, for each bext edit. The re-signing operation itself is cheap (milliseconds), but the hash re-computation requires one full audio-data read per edit. For workflows with iterative bext refinement, batching edits and generating one update manifest per session, or generating the manifest only at workflow completion, is recommended to avoid per-edit hash overhead.
+**Option 2: WAV sidecar Manifest.** A sidecar with the audio data hashing keeps the original Manifest cryptographically valid across bext edits (the audio bytes it bound to are unchanged), but C2PA's provenance model expects each editing action to be documented by a new signed update Manifest. So while the original Manifest doesn't break, a fully C2PA-compliant workflow still produces a new update Manifest, and recomputes the audio-data hash, for each bext edit. The re-signing operation itself is cheap (milliseconds), but the hash re-computation requires one full audio-data read per edit. For workflows with iterative bext refinement, batching edits and generating one update Manifest per session, or generating the Manifest only at workflow completion, is recommended to avoid per-edit hash overhead.
 
-**Option 3: Hybrid — sidecar for initial operations, embedded for finalization.** For active working files undergoing iterative bext corrections, another option could be to maintain a sidecar manifest that hashes the audio data chunk. Then at the point of final delivery or deposit, the full manifest could be regenerated and embedded in the WAV file itself, covering the complete final state of the file. This provides the benefits of embedded provenance for long-term preservation while avoiding re-sign overhead during active editing.
+**Option 3: Hybrid — sidecar for initial operations, embedded for finalization.** For active working files undergoing iterative bext corrections, another option could be to maintain a sidecar Manifest that hashes the audio data chunk. Then at the point of final delivery or deposit, the full Manifest could be regenerated and embedded in the WAV file itself, covering the complete final state of the file. This provides the benefits of embedded provenance for long-term preservation while avoiding re-sign overhead during active editing.
 
 ## Recommended Approach
 
-Option 1 is recommended for BWF MetaEdit's initial C2PA implementation. This would require the definition of an action label for BWF MetaEdit operations, such as `gov.digitizationguidelines.metadata_update`, (ideally kept in sync with the proposed embARC action). Options would need to be added in order to coordinate the relationship between user preferences to follow or ignore the EBU recommendation to place the bext chunk before the data chunk and to whether or not to use C2PA to document metadata changes. Also whereas DPX would set `image_data_modified` to false, BWF MetaEdit would set `audio_data_modified` to false.
+Option 1 is recommended for BWF MetaEdit's initial C2PA implementation. This could require the definition of an action label for BWF MetaEdit operations. Options would need to be added in order to coordinate the relationship between user preferences to follow or ignore the EBU recommendation to place the bext chunk before the data chunk and to whether or not to use C2PA to document metadata changes. Also BWF MetaEdit would set `audio_data_modified` to false.
 
 ## Relationship Between BWF MetaEdit's MD5 and C2PA Hard Binding
 
@@ -66,7 +66,7 @@ BWF MetaEdit could document this relationship explicitly in its C2PA output; for
 
 ```bash
 --c2pa-embed
-    Generate and embed a C2PA manifest after completing the requested metadata
+    Generate and embed a C2PA Manifest after completing the requested metadata
     operation. Requires a configured signing credential.
 
 --c2pa-sign=<credential_path>
@@ -79,14 +79,14 @@ BWF MetaEdit could document this relationship explicitly in its C2PA output; for
 
 --c2pa-action=<label>
     Override the default action label. Defaults to
-    gov.digitizationguidelines.metadata_update.
+    'to.be.defined.metadata_update'.
 
 --c2pa-description=<text>
     Free-text description for the action's description field.
 
 --c2pa-include-md5
     Include the existing BWF MetaEdit MD5 value (if present in the bext
-    chunk) as an assertion parameter in the generated manifest, for
+    chunk) as an assertion parameter in the generated Manifest, for
     cross-reference by validators.
 
 --c2pa-ingredient=<sidecar_path>
@@ -95,7 +95,7 @@ BWF MetaEdit could document this relationship explicitly in its C2PA output; for
     applications which include C2PA sidecar generation.
 
 --c2pa-no-sign
-    Generate an unsigned manifest for review. Not valid for verification.
+    Generate an unsigned Manifest for review. Not valid for verification.
 
 --c2pa-out=<path>
     Write the sidecar to an explicit path.
@@ -105,13 +105,13 @@ BWF MetaEdit could document this relationship explicitly in its C2PA output; for
 
 ```bash
 --c2pa-read
-    Read and display any C2PA sidecar or embedded manifest associated with
+    Read and display any C2PA sidecar or embedded Manifest associated with
     the input WAV file(s). Presented alongside BWF MetaEdit's standard
     metadata report. Read-only; no file modification. No signing credential
     required.
 
 --c2pa-read-format=text|json|xml|csv
-    Output format for the manifest report.
+    Output format for the Manifest report.
       text   Human-readable summary (default)
       json   Machine-readable JSON
       xml    XML, suitable for inclusion in BWF MetaEdit's existing XML
@@ -120,7 +120,7 @@ BWF MetaEdit could document this relationship explicitly in its C2PA output; for
 
 --c2pa-validate
     Verify the cryptographic signature and hash integrity of an existing
-    C2PA manifest against the current state of the WAV file(s). Reports
+    C2PA Manifest against the current state of the WAV file(s). Reports
     pass/fail per file and overall signature validity. Exit code is non-zero
     if any file fails.
 
