@@ -10,27 +10,18 @@ The full report is available in two expressions.
 
 Here is a full PDF of the entire review: [docs/cap-environmental-review.pdf](docs/cap-environmental-review.pdf)
 
-Or see the links below to navigate an HTML-rendetion of the review.
+Or see the links below to navigate a rendered version of the review in HTML and Markdown.
+
 ### Sections
 
-| Section | Source | HTML |
-|---|---|---|
-| 1. Introduction | [sections/00-introduction.md](sections/00-introduction.md) | [docs/html/00-introduction.html](docs/html/00-introduction.html) |
-| 2. Registry Reference | [sections/registry_introduction.md](sections/registry_introduction.md) | [docs/html/registry_introduction.html](docs/html/registry_introduction.html) |
-| 3. Tools Registry | [docs/markdown/tools.md](docs/markdown/tools.md) | [docs/tools.html](docs/tools.html) |
-| 4. Formats Registry | [docs/markdown/formats.md](docs/markdown/formats.md) | [docs/formats.html](docs/formats.html) |
-| 5. Mechanisms Registry | [docs/markdown/mechanisms.md](docs/markdown/mechanisms.md) | [docs/mechanisms.html](docs/mechanisms.html) |
-| 6. Featured Tools | [sections/featured_tools.md](sections/featured_tools.md) | [docs/html/featured_tools.html](docs/html/featured_tools.html) |
-| 7. Appendix: embARC Review | [sections/app1_embarc_review.md](sections/app1_embarc_review.md) | [docs/html/app1_embarc_review.html](docs/html/app1_embarc_review.html) |
-| 8. Appendix: BWF MetaEdit Review | [sections/app2_bwfmetaedit_review.md](sections/app2_bwfmetaedit_review.md) | [docs/html/app2_bwfmetaedit_review.html](docs/html/app2_bwfmetaedit_review.html) |
-
-### Registry tables
-
-Browsable, sortable HTML tables generated directly from the registries:
-
-- [Tools registry](docs/tools.html)
-- [Formats registry](docs/formats.html)
-- [Mechanisms registry](docs/mechanisms.html)
+- 1. [Introduction](sections/00-introduction.md)
+- 2. [Registry Reference](sections/registry_introduction.md)
+- 3. [Tools Registry](https://mediaarea.github.io/cap-environmental-review/tools.html)
+- 4. [Formats Registry](https://mediaarea.github.io/cap-environmental-review/formats.html)
+- 5. [Mechanisms Registry](https://mediaarea.github.io/cap-environmental-review/mechanisms.html)
+- 6. [Featured Tools](sections/featured_tools.md)
+- 7. [Appendix: embARC Review](sections/app1_embarc_review.md)
+- 8. [Appendix: BWF MetaEdit Review](sections/app2_bwfmetaedit_review.md)
 
 ## Repository structure
 
