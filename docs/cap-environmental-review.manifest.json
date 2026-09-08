@@ -1,0 +1,42 @@
+{
+  "document": {
+    "title": "Content Authenticity and Provenance for Audiovisual Collections: An Environmental Review",
+    "author": "David Rice",
+    "date": "August 2026",
+    "publisher": "Federal Agencies Digital Guidelines Initiative (FADGI)",
+    "language": "en-US",
+    "rights": "Produced for the Library of Congress. Released under the Creative Commons CC0 1.0 Universal Public Domain Dedication (https://creativecommons.org/publicdomain/zero/1.0/)."
+  },
+  "file": {
+    "name": "cap-environmental-review.pdf",
+    "format": "application/pdf",
+    "bytes":   455024,
+    "sha256": "7559f6718f6b628eb57f9707915ff5281cbc0e6e48ef26da1f1b6d39a9873619",
+    "pages": 146
+  },
+  "provenance": {
+    "document_id": "urn:uuid:FE8059EB-E731-45AC-8B49-6813A5C2EC86",
+    "build_date": "2026-09-08T19:50:08Z",
+    "build_tool": "assemble-pdf.sh (pandoc + latex)",
+    "source": {
+      "format": "markdown",
+      "sections": [
+        "sections/00-introduction.md","sections/registry_introduction.md","docs/markdown/tools.md","docs/markdown/formats.md","docs/markdown/mechanisms.md","sections/featured_tools.md","sections/app1_embarc_review.md","sections/app2_bwfmetaedit_review.md"
+      ],
+      "combined_sha256": "01c7bb2388b475002824b54db825b9dd2eb1b72455b06c3ecadc04fec0b76351",
+      "combined_bytes":   306506
+    },
+    "embedded_xmp": {
+      "dc:title": "Content Authenticity and Provenance for Audiovisual Collections: An Environmental Review",
+      "dc:creator": ["David Rice"],
+      "dc:subject": ["C2PA","content provenance","audiovisual preservation","FADGI","TCR4CAP","digital archives","metadata","fixity"],
+      "dc:format": "application/pdf",
+      "dc:identifier": "urn:uuid:FE8059EB-E731-45AC-8B49-6813A5C2EC86",
+      "xmpMM:documentID": "urn:uuid:FE8059EB-E731-45AC-8B49-6813A5C2EC86",
+      "xmpMM:instanceID": "urn:uuid:FE8059EB-E731-45AC-8B49-6813A5C2EC86:1788897008",
+      "pdfx:sourceHash": "sha256:01c7bb2388b475002824b54db825b9dd2eb1b72455b06c3ecadc04fec0b76351",
+      "pdfx:buildDate": "2026-09-08T19:50:08Z",
+      "pdfx:buildTool": "assemble-pdf.sh"
+    }
+  }
+}
