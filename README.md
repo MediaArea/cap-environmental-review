@@ -15,14 +15,14 @@ Or see the links below to navigate an HTML-rendetion of the review.
 
 | Section | Source | HTML |
 |---|---|---|
-| 1. Introduction | [sections/00-introduction.md](sections/00-introduction.md) | [docs/00-introduction.html](docs/00-introduction.html) |
-| 2. Registry Reference | [sections/registry_introduction.md](sections/registry_introduction.md) | [docs/registry_introduction.html](docs/registry_introduction.html) |
-| 3. Tools Registry | [docs/tools.md](docs/tools.md) | [docs/tools.html](docs/tools.html) |
-| 4. Formats Registry | [docs/formats.md](docs/formats.md) | [docs/formats.html](docs/formats.html) |
-| 5. Mechanisms Registry | [docs/mechanisms.md](docs/mechanisms.md) | [docs/mechanisms.html](docs/mechanisms.html) |
-| 6. Featured Tools | [sections/featured_tools.md](sections/featured_tools.md) | [docs/featured_tools.html](docs/featured_tools.html) |
-| 7. Appendix: embARC Review | [sections/app1_embarc_review.md](sections/app1_embarc_review.md) | [docs/app1_embarc_review.html](docs/app1_embarc_review.html) |
-| 8. Appendix: BWF MetaEdit Review | [sections/app2_bwfmetaedit_review.md](sections/app2_bwfmetaedit_review.md) | [docs/app2_bwfmetaedit_review.html](docs/app2_bwfmetaedit_review.html) |
+| 1. Introduction | [sections/00-introduction.md](sections/00-introduction.md) | [docs/html/00-introduction.html](docs/html/00-introduction.html) |
+| 2. Registry Reference | [sections/registry_introduction.md](sections/registry_introduction.md) | [docs/html/registry_introduction.html](docs/html/registry_introduction.html) |
+| 3. Tools Registry | [docs/markdown/tools.md](docs/markdown/tools.md) | [docs/tools.html](docs/tools.html) |
+| 4. Formats Registry | [docs/markdown/formats.md](docs/markdown/formats.md) | [docs/formats.html](docs/formats.html) |
+| 5. Mechanisms Registry | [docs/markdown/mechanisms.md](docs/markdown/mechanisms.md) | [docs/mechanisms.html](docs/mechanisms.html) |
+| 6. Featured Tools | [sections/featured_tools.md](sections/featured_tools.md) | [docs/html/featured_tools.html](docs/html/featured_tools.html) |
+| 7. Appendix: embARC Review | [sections/app1_embarc_review.md](sections/app1_embarc_review.md) | [docs/html/app1_embarc_review.html](docs/html/app1_embarc_review.html) |
+| 8. Appendix: BWF MetaEdit Review | [sections/app2_bwfmetaedit_review.md](sections/app2_bwfmetaedit_review.md) | [docs/html/app2_bwfmetaedit_review.html](docs/html/app2_bwfmetaedit_review.html) |
 
 ### Registry tables
 
