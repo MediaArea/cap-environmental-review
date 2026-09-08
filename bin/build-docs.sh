@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/build-docs.sh — Generate HTML + Markdown docs from CAP registry XML files.
+# bin/build-docs.sh: Generate HTML + Markdown docs from CAP registry XML files.
 # Dependencies: xmlstarlet, bash 4+
 
 set -euo pipefail
@@ -9,10 +9,12 @@ ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 TOOLS_XML="$ROOT_DIR/registries/tools.xml"
 FORMATS_XML="$ROOT_DIR/registries/formats.xml"
 MECHANISMS_XML="$ROOT_DIR/registries/mechanisms.xml"
-INTRO_MD="$ROOT_DIR/sections/registry_introduction.md"
 DOCS_DIR="$ROOT_DIR/docs"
+MD_DIR="$ROOT_DIR/docs/markdown"
 
-mkdir -p "$DOCS_DIR"
+mkdir -p "$DOCS_DIR" "$MD_DIR"
+
+# Validation
 
 for f in "$TOOLS_XML" "$FORMATS_XML" "$MECHANISMS_XML"; do
   if ! xmlstarlet val -q "$f" 2>/dev/null; then
@@ -23,9 +25,10 @@ for f in "$TOOLS_XML" "$FORMATS_XML" "$MECHANISMS_XML"; do
 done
 echo "XML valid."
 
+# Helper Functions
+
 xval() { xmlstarlet sel -t -v "$2" "$1" 2>/dev/null | tr -s ' \t\n\r' ' ' | sed 's/^ //;s/ $//' || true; }
 xcount() { xmlstarlet sel -t -v "count($2)" "$1" 2>/dev/null || echo "0"; }
-fdd_url() { echo "https://www.loc.gov/preservation/digital/formats/fdd/${1,,}.shtml"; }
 
 url_cells_html() {
   while IFS=$'\t' read -r url utype; do
@@ -84,13 +87,15 @@ tcr_md() {
   su=$(xval "$f" "${b}/tcr4cap-comments/substantiation")
   io=$(xval "$f" "${b}/tcr4cap-comments/interoperability")
   [[ -z "${aw}${te}${bi}${ai}${su}${io}" ]] && return
-  echo -e "### TCR4CAP Comments\n"
-  [[ -n "$aw" ]] && echo -e "**Awareness:** ${aw}\n"
-  [[ -n "$te" ]] && echo -e "**Tamper Evidence:** ${te}\n"
-  [[ -n "$bi" ]] && echo -e "**Binding:** ${bi}\n"
-  [[ -n "$ai" ]] && echo -e "**AI Attribution:** ${ai}\n"
-  [[ -n "$su" ]] && echo -e "**Substantiation:** ${su}\n"
-  [[ -n "$io" ]] && echo -e "**Interoperability:** ${io}\n"
+  echo ""
+  echo "### TCR4CAP Comments"
+  echo ""
+  [[ -n "$aw" ]] && echo "**Awareness:** ${aw}" && echo ""
+  [[ -n "$te" ]] && echo "**Tamper Evidence:** ${te}" && echo ""
+  [[ -n "$bi" ]] && echo "**Binding:** ${bi}" && echo ""
+  [[ -n "$ai" ]] && echo "**AI Attribution:** ${ai}" && echo ""
+  [[ -n "$su" ]] && echo "**Substantiation:** ${su}" && echo ""
+  [[ -n "$io" ]] && echo "**Interoperability:** ${io}" && echo ""
 }
 
 tcr_vals() {
@@ -155,12 +160,15 @@ c2pa_modes_md() {
   local f="$1" b="$2"
   local count=$(xcount "$f" "${b}/c2pa-support/mode")
   if [[ "$count" -gt 0 ]]; then
-    echo -e "\n**C2PA Support Modes:**\n"
+    echo ""
+    echo "**C2PA Support Modes:**"
+    echo ""
     while IFS= read -r mtype; do
       [[ -z "$mtype" ]] && continue
       local mtext=$(xmlstarlet sel -t -v "${b}/c2pa-support/mode[@type='${mtype}']" "$f" 2>/dev/null | tr -s ' \t\n\r' ' ' | sed 's/^ //;s/ $//' || true)
       echo "- **${mtype}:** ${mtext}"
     done < <(xmlstarlet sel -t -m "${b}/c2pa-support/mode" -v "@type" -n "$f" 2>/dev/null || true) || true
+    echo ""
   fi
 }
 
@@ -190,7 +198,9 @@ mech_summary_md() {
   local f="$1" b="$2"
   local count=$(xcount "$f" "${b}/mechanisms/mechanism-ref")
   if [[ "$count" -gt 0 ]]; then
-    echo -e "\n**Mechanisms:**\n"
+    echo ""
+    echo "**Mechanisms:**"
+    echo ""
     echo "| Mechanism | Type | File-level | Content-level | Metadata Integrity |"
     echo "|---|---|---|---|---|"
     while IFS= read -r mid; do
@@ -213,9 +223,7 @@ struct_row_vars() {
   tcr_vals "$f" "$b"
 }
 
-# Convert markdown to simple HTML.
-# Handles: headings, paragraphs, bullet lists, and pipe tables (including
-# table rows that are wrapped across multiple physical lines).
+# Markdown to HTML converter
 md_to_html() {
   local in_table=false in_list=false
   local logical_line=""
@@ -286,7 +294,40 @@ md_to_html() {
   return 0
 }
 
-# html_head TITLE [ACTIVE_TAB]
+fdd_cells_html() {
+  local f="$1" b="$2"
+  local count=$(xcount "$f" "${b}/fdd-ref[@status!='none']")
+  if [[ "$count" -gt 0 ]]; then
+    echo "<tr><td>FDD References</td><td>"
+    while IFS= read -r fid; do
+      [[ -z "$fid" ]] && continue
+      local furl=$(xval "$f" "${b}/fdd-ref[@id='${fid}']/@url")
+      local fstat=$(xval "$f" "${b}/fdd-ref[@id='${fid}']/@status")
+      local fname=$(xval "$f" "${b}/fdd-ref[@id='${fid}']/@name")
+      echo "<a href=\"${furl}\">${fid}</a> <small>(${fstat}: ${fname})</small><br>"
+    done < <(xmlstarlet sel -t -m "${b}/fdd-ref[@status!='none']" -v "@id" -n "$f" 2>/dev/null || true) || true
+    echo "</td></tr>"
+  fi
+}
+
+fdd_lines_md() {
+  local f="$1" b="$2"
+  local count=$(xcount "$f" "${b}/fdd-ref[@status!='none']")
+  if [[ "$count" -gt 0 ]]; then
+    echo "**FDD References:**  "
+    while IFS= read -r fid; do
+      [[ -z "$fid" ]] && continue
+      local furl=$(xval "$f" "${b}/fdd-ref[@id='${fid}']/@url")
+      local fstat=$(xval "$f" "${b}/fdd-ref[@id='${fid}']/@status")
+      local fname=$(xval "$f" "${b}/fdd-ref[@id='${fid}']/@name")
+      echo "- [${fid}](${furl}) (${fstat}: ${fname})  "
+    done < <(xmlstarlet sel -t -m "${b}/fdd-ref[@status!='none']" -v "@id" -n "$f" 2>/dev/null || true) || true
+    echo ""
+  fi
+}
+
+# HTML scaffolding
+
 html_head() {
   local title="$1" active="${2:-}"
   cat <<HTML
@@ -363,7 +404,6 @@ html_head() {
 HTML
 }
 
-# subtabs_html ACTIVE BASE
 subtabs_html() {
   local active="$1" base="$2"
   cat <<HTML
@@ -374,7 +414,6 @@ subtabs_html() {
 HTML
 }
 
-# toc_html REGISTRY_BASE ENTRY_XPATH NAME_XPATH FILE
 toc_html() {
   local base="$1" xpath="$2" namepath="$3" file="$4"
   echo "<h2 id='contents'>Table of Contents</h2>"
@@ -387,10 +426,9 @@ toc_html() {
   echo "</tbody></table>"
 }
 
-# toc_md REGISTRY_BASE ENTRY_XPATH NAME_XPATH FILE
 toc_md() {
   local base="$1" xpath="$2" namepath="$3" file="$4"
-  echo -e "## Table of Contents\n"
+  echo ""
   echo "| ID | Name |"
   echo "|---|---|"
   while IFS= read -r id; do
@@ -401,28 +439,12 @@ toc_md() {
   echo ""
 }
 
-# REGISTRY INTRODUCTION (index)
-echo "Building registry introduction..."
+echo "  -> docs/index.html, docs/markdown/registry_introduction.md"
 
-{
-  html_head "CAP Registry Reference" "intro"
-  if [[ -f "$INTRO_MD" ]]; then
-    tail -n +2 "$INTRO_MD" | md_to_html || true
-  else
-    echo "<p><em>registry_introduction.md not found at ${INTRO_MD}</em></p>"
-  fi
-  echo "</body></html>"
-} > "$DOCS_DIR/index.html"
-
-if [[ -f "$INTRO_MD" ]]; then
-  cp "$INTRO_MD" "$DOCS_DIR/registry_introduction.md"
-fi
-
-echo "  -> docs/index.html, docs/registry_introduction.md"
-
-# TOOLS
+# TOOLS REGISTRY
 echo "Building tools docs..."
 
+# HTML Report
 {
   html_head "Tools Registry" "tools"
   subtabs_html "report" "tools"
@@ -470,8 +492,10 @@ echo "Building tools docs..."
   echo "</body></html>"
 } > "$DOCS_DIR/tools.html"
 
+# Markdown Report 
 {
-  echo -e "# Tools Registry\n"
+  echo "# Tools Registry"
+  echo ""
   toc_md "tool" "//tool" "/name" "$TOOLS_XML"
   while IFS= read -r id; do
     [[ -z "$id" ]] && continue
@@ -483,7 +507,8 @@ echo "Building tools docs..."
     license=$(xval "$TOOLS_XML" "${b}/license")
     c2pa=$(xval    "$TOOLS_XML" "${b}/c2pa-support")
     desc=$(xval    "$TOOLS_XML" "${b}/description")
-    echo -e "## ${name}\n"
+    echo "## ${name} {#tool-${id}}"
+    echo ""
     echo "**ID:** \`${id}\`  "
     [[ -n "$type"    ]] && echo "**Category:** ${type}  "
     [[ -n "$version" ]] && echo "**Version:** ${version}$([[ -n "$rdate" ]] && echo " (${rdate})")  "
@@ -492,17 +517,16 @@ echo "Building tools docs..."
     [[ -n "$c2pa"    ]] && echo "**C2PA Support:** ${c2pa}  "
     url_lines_md "$TOOLS_XML" "$b"
     echo ""
-    [[ -n "$desc" ]] && echo -e "${desc}\n"
+    [[ -n "$desc" ]] && echo "${desc}" && echo ""
     tcr_md "$TOOLS_XML" "$b"
-    echo -e "---\n"
+    echo "---"
+    echo ""
   done < <(xmlstarlet sel -t -m "//tool" -v "@id" -n "$TOOLS_XML" 2>/dev/null || true) || true
-} > "$DOCS_DIR/tools.md"
+} > "$MD_DIR/tools.md"
 
-echo "  -> docs/tools.html, docs/tools.md"
-
-# TOOLS — Complete Table
+# HTML Complete Table
 {
-  html_head "Tools — Complete Table" "tools"
+  html_head "Tools: Complete Table" "tools"
   subtabs_html "table" "tools"
   echo "<p>Complete table with all fields including TCR4CAP comments.</p>"
   echo "<table id='tools-full'><tbody><tr><th data-sort='id'>ID</th><th data-sort='name'>Name</th><th data-sort='type'>Category</th><th data-sort='version'>Version</th><th data-sort='license'>License</th><th data-sort='provenance'>Provenance</th><th data-sort='c2pa'>C2PA</th><th>URL</th><th>Awareness</th><th>Tamper Evidence</th><th>Binding</th><th>AI Attribution</th><th>Substantiation</th><th>Interoperability</th></tr>"
@@ -521,8 +545,10 @@ echo "  -> docs/tools.html, docs/tools.md"
   echo "</tbody></table></body></html>"
 } > "$DOCS_DIR/tools-table.html"
 
+# Markdown Complete Table 
 {
-  echo -e "# Tools — Complete Table\n"
+  echo "# Tools: Complete Table"
+  echo ""
   echo "| ID | Name | Category | Version | License | Provenance | C2PA | URL | Awareness | Tamper Evidence | Binding | AI Attribution | Substantiation | Interoperability |"
   echo "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
   while IFS= read -r id; do
@@ -537,20 +563,21 @@ echo "  -> docs/tools.html, docs/tools.md"
     struct_row_vars "$TOOLS_XML" "$b" md
     echo "| \`${id}\` | ${name} | ${type} | ${version:-—} | ${license:-—} | ${psum} | ${c2pa:-—} | ${url_cell} | ${aw:-—} | ${te:-—} | ${bi:-—} | ${ai:-—} | ${su:-—} | ${io:-—} |"
   done < <(xmlstarlet sel -t -m "//tool" -v "@id" -n "$TOOLS_XML" 2>/dev/null || true) || true
-} > "$DOCS_DIR/tools-table.md"
+} > "$MD_DIR/tools-table.md"
 
-echo "  -> docs/tools-table.html, docs/tools-table.md"
+echo "  -> docs/tools.html, docs/tools-table.html, docs/markdown/tools.md, docs/markdown/tools-table.md"
 
-# FORMATS
+# FORMATS REGISTRY
 echo "Building formats docs..."
 
+# HTML Report
 {
   html_head "Formats Registry" "formats"
   subtabs_html "report" "formats"
   toc_html "format" "//format" "/name" "$FORMATS_XML"
 
   echo "<h2 id='report'>Report</h2>"
-  echo "<table id='formats-main'><tbody><tr><th data-sort='id'>ID</th><th data-sort='name'>Name</th><th data-sort='type'>Type</th><th data-sort='struct'>Structure</th><th data-sort='read'>Readability</th><th data-sort='verify'>Verifiability</th><th data-sort='persist'>Persistence</th></tr>"
+  echo "<table id='formats-main'><tbody><tr><th data-sort='id'>ID</th><th data-sort='name'>Name</th><th data-sort='type'>Type</th><th data-sort='struct'>Structure</th><th data-sort='read'>Readability</th><th data-sort='verify'>Verifiability</th></tr>"
   while IFS= read -r id; do
     [[ -z "$id" ]] && continue
     b="//format[@id='${id}']"
@@ -559,8 +586,7 @@ echo "Building formats docs..."
     struct=$(xval "$FORMATS_XML" "${b}/structure")
     rt=$(xval     "$FORMATS_XML" "${b}/readability/@type")
     vt=$(xval     "$FORMATS_XML" "${b}/verifiability/@type")
-    pt=$(xval     "$FORMATS_XML" "${b}/persistence/@type")
-    echo "<tr><td><a href='#format-${id}'><code>${id}</code></a></td><td>${name}</td><td>${type}</td><td><code>${struct}</code></td><td>${rt}</td><td>${vt}</td><td>${pt:-—}</td></tr>"
+    echo "<tr><td><a href='#format-${id}'><code>${id}</code></a></td><td>${name}</td><td>${type}</td><td><code>${struct}</code></td><td>${rt}</td><td>${vt}</td></tr>"
   done < <(xmlstarlet sel -t -m "//format" -v "@id" -n "$FORMATS_XML" 2>/dev/null || true) || true
   echo "</tbody></table>"
 
@@ -574,7 +600,6 @@ echo "Building formats docs..."
     r_text=$(xval "$FORMATS_XML" "${b}/readability")
     v_type=$(xval "$FORMATS_XML" "${b}/verifiability/@type")
     v_text=$(xval "$FORMATS_XML" "${b}/verifiability")
-    p_type=$(xval "$FORMATS_XML" "${b}/persistence/@type")
     p_text=$(xval "$FORMATS_XML" "${b}/persistence")
     desc=$(xval   "$FORMATS_XML" "${b}/description")
     echo "<h2 id='format-${id}'>${name}</h2>"
@@ -584,7 +609,8 @@ echo "Building formats docs..."
     [[ -n "$struct" ]] && echo "<tr><td>Structure</td><td><code>${struct}</code></td></tr>"
     echo "<tr><td>Readability</td><td><code>${r_type}</code> &mdash; ${r_text}</td></tr>"
     echo "<tr><td>Verifiability</td><td><code>${v_type}</code> &mdash; ${v_text}</td></tr>"
-    [[ -n "$p_type" ]] && echo "<tr><td>Persistence</td><td><code>${p_type}</code> &mdash; ${p_text}</td></tr>"
+    [[ -n "$p_text" ]] && echo "<tr><td>Persistence</td><td>${p_text}</td></tr>"
+    fdd_cells_html "$FORMATS_XML" "$b"
     url_cells_html "$FORMATS_XML" "$b"
     c2pa_modes_html "$FORMATS_XML" "$b"
     mech_summary_html "$FORMATS_XML" "$b"
@@ -596,8 +622,10 @@ echo "Building formats docs..."
   echo "</body></html>"
 } > "$DOCS_DIR/formats.html"
 
+# Markdown Report 
 {
-  echo -e "# Formats Registry\n"
+  echo "# Formats Registry"
+  echo ""
   toc_md "format" "//format" "/name" "$FORMATS_XML"
   while IFS= read -r id; do
     [[ -z "$id" ]] && continue
@@ -609,37 +637,41 @@ echo "Building formats docs..."
     r_text=$(xval "$FORMATS_XML" "${b}/readability")
     v_type=$(xval "$FORMATS_XML" "${b}/verifiability/@type")
     v_text=$(xval "$FORMATS_XML" "${b}/verifiability")
-    p_type=$(xval "$FORMATS_XML" "${b}/persistence/@type")
     p_text=$(xval "$FORMATS_XML" "${b}/persistence")
     desc=$(xval   "$FORMATS_XML" "${b}/description")
-    echo -e "## ${name}\n"
+    echo "## ${name}"
+    echo ""
     echo "**ID:** \`${id}\`  "
     [[ -n "$type"   ]] && echo "**Type:** ${type}  "
     [[ -n "$struct" ]] && echo "**Structure:** \`${struct}\`  "
     echo ""
-    echo -e "| Property | Type | Notes |\n|---|---|---|"
+    echo "| Property | Type | Notes |"
+    echo "|---|---|---|"
     echo "| Readability | \`${r_type}\` | ${r_text} |"
     echo "| Verifiability | \`${v_type}\` | ${v_text} |"
-    [[ -n "$p_type" ]] && echo "| Persistence | \`${p_type}\` | ${p_text} |"
+    # CHANGED: was $p_type (undefined variable); now uses $p_text correctly
+    [[ -n "$p_text" ]] && echo "| Persistence | | ${p_text} |"
     echo ""
+    fdd_lines_md "$FORMATS_XML" "$b"
     url_lines_md "$FORMATS_XML" "$b"
     c2pa_modes_md "$FORMATS_XML" "$b"
     mech_summary_md "$FORMATS_XML" "$b"
     echo ""
-    [[ -n "$desc" ]] && echo -e "${desc}\n"
+    [[ -n "$desc" ]] && echo "${desc}" && echo ""
     tcr_md "$FORMATS_XML" "$b"
-    echo -e "---\n"
+    echo "---"
+    echo ""
   done < <(xmlstarlet sel -t -m "//format" -v "@id" -n "$FORMATS_XML" 2>/dev/null || true) || true
-} > "$DOCS_DIR/formats.md"
+} > "$MD_DIR/formats.md"
 
-echo "  -> docs/formats.html, docs/formats.md"
+echo "  -> docs/formats.html, docs/markdown/formats.md"
 
-# FORMATS — Complete Table
+# HTML Complete Table
 {
-  html_head "Formats — Complete Table" "formats"
+  html_head "Formats: Complete Table" "formats"
   subtabs_html "table" "formats"
   echo "<p>Complete table with all fields including TCR4CAP comments.</p>"
-  echo "<table id='formats-full'><tbody><tr><th data-sort='id'>ID</th><th data-sort='name'>Name</th><th data-sort='type'>Type</th><th data-sort='struct'>Structure</th><th data-sort='read'>Readability</th><th data-sort='verify'>Verifiability</th><th data-sort='persist'>Persistence</th><th>URL</th><th>Awareness</th><th>Tamper Evidence</th><th>Binding</th><th>AI Attribution</th><th>Substantiation</th><th>Interoperability</th></tr>"
+  echo "<table id='formats-full'><tbody><tr><th data-sort='id'>ID</th><th data-sort='name'>Name</th><th data-sort='type'>Type</th><th data-sort='struct'>Structure</th><th data-sort='read'>Readability</th><th data-sort='verify'>Verifiability</th><th>URL</th><th>Awareness</th><th>Tamper Evidence</th><th>Binding</th><th>AI Attribution</th><th>Substantiation</th><th>Interoperability</th></tr>"
   while IFS= read -r id; do
     [[ -z "$id" ]] && continue
     b="//format[@id='${id}']"
@@ -648,17 +680,19 @@ echo "  -> docs/formats.html, docs/formats.md"
     struct=$(xval "$FORMATS_XML" "${b}/structure")
     rt=$(xval     "$FORMATS_XML" "${b}/readability/@type")
     vt=$(xval     "$FORMATS_XML" "${b}/verifiability/@type")
-    pt=$(xval     "$FORMATS_XML" "${b}/persistence/@type")
     struct_row_vars "$FORMATS_XML" "$b" html
-    echo "<tr><td><a href='formats.html#format-${id}'><code>${id}</code></a></td><td>${name}</td><td>${type}</td><td><code>${struct}</code></td><td>${rt}</td><td>${vt}</td><td>${pt:-—}</td><td>${url_cell}</td><td>${aw:-—}</td><td>${te:-—}</td><td>${bi:-—}</td><td>${ai:-—}</td><td>${su:-—}</td><td>${io:-—}</td></tr>"
+    echo "<tr><td><a href='formats.html#format-${id}'><code>${id}</code></a></td><td>${name}</td><td>${type}</td><td><code>${struct}</code></td><td>${rt}</td><td>${vt}</td><td>${url_cell}</td><td>${aw:-—}</td><td>${te:-—}</td><td>${bi:-—}</td><td>${ai:-—}</td><td>${su:-—}</td><td>${io:-—}</td></tr>"
   done < <(xmlstarlet sel -t -m "//format" -v "@id" -n "$FORMATS_XML" 2>/dev/null || true) || true
   echo "</tbody></table></body></html>"
 } > "$DOCS_DIR/formats-table.html"
 
+# Markdown Complete Table 
 {
-  echo -e "# Formats — Complete Table\n"
-  echo "| ID | Name | Type | Structure | Readability | Verifiability | Persistence | URL | Awareness | Tamper Evidence | Binding | AI Attribution | Substantiation | Interoperability |"
-  echo "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
+  echo "# Formats: Complete Table"
+  echo ""
+  # CHANGED: header now includes Persistence (was listed before but missing from rows)
+  echo "| ID | Name | Type | Structure | Readability | Verifiability | URL | Awareness | Tamper Evidence | Binding | AI Attribution | Substantiation | Interoperability |"
+  echo "|---|---|---|---|---|---|---|---|---|---|---|---|---|"
   while IFS= read -r id; do
     [[ -z "$id" ]] && continue
     b="//format[@id='${id}']"
@@ -667,17 +701,18 @@ echo "  -> docs/formats.html, docs/formats.md"
     struct=$(xval "$FORMATS_XML" "${b}/structure")
     rt=$(xval     "$FORMATS_XML" "${b}/readability/@type")
     vt=$(xval     "$FORMATS_XML" "${b}/verifiability/@type")
-    pt=$(xval     "$FORMATS_XML" "${b}/persistence/@type")
     struct_row_vars "$FORMATS_XML" "$b" md
-    echo "| \`${id}\` | ${name} | ${type} | \`${struct}\` | ${rt} | ${vt} | ${pt:-—} | ${url_cell} | ${aw:-—} | ${te:-—} | ${bi:-—} | ${ai:-—} | ${su:-—} | ${io:-—} |"
+    # CHANGED: was missing ${pt} in the row; now matches the header
+    echo "| \`${id}\` | ${name} | ${type} | \`${struct}\` | ${rt} | ${vt} | ${url_cell} | ${aw:-—} | ${te:-—} | ${bi:-—} | ${ai:-—} | ${su:-—} | ${io:-—} |"
   done < <(xmlstarlet sel -t -m "//format" -v "@id" -n "$FORMATS_XML" 2>/dev/null || true) || true
-} > "$DOCS_DIR/formats-table.md"
+} > "$MD_DIR/formats-table.md"
 
-echo "  -> docs/formats-table.html, docs/formats-table.md"
+echo "  -> docs/formats-table.html, docs/markdown/formats-table.md"
 
-# MECHANISMS
+# MECHANISMS REGISTRY
 echo "Building mechanisms docs..."
 
+# HTML Report
 {
   html_head "Mechanisms Registry" "mechanisms"
   subtabs_html "report" "mechanisms"
@@ -725,29 +760,34 @@ echo "Building mechanisms docs..."
     url_cells_html "$MECHANISMS_XML" "$b"
     echo "</tbody></table>"
 
-    echo -e "<h3>Editability</h3>\n<table><tbody><tr><th>Level</th><th>Type</th><th>Notes</th></tr>"
+    echo "<h3>Editability</h3>"
+    echo "<table><tbody><tr><th>Level</th><th>Type</th><th>Notes</th></tr>"
     echo "<tr><td>File-level</td><td>${fl_t}</td><td>${fl_v}</td></tr>"
     echo "<tr><td>Content-level</td><td>${cl_t}</td><td>${cl_v}</td></tr>"
     echo "</tbody></table>"
 
-    echo -e "<h3>Verifiability</h3>\n<table><tbody><tr><th>Dimension</th><th>Type</th><th>Notes</th></tr>"
+    echo "<h3>Verifiability</h3>"
+    echo "<table><tbody><tr><th>Dimension</th><th>Type</th><th>Notes</th></tr>"
     echo "<tr><td>Media integrity</td><td>${mi_t}</td><td>${mi_v}</td></tr>"
     echo "<tr><td>Metadata integrity</td><td>${mdi_t}</td><td>${mdi_v}</td></tr>"
     echo "<tr><td>Chain of custody</td><td>${coc_t}</td><td>${coc_v}</td></tr>"
     echo "</tbody></table>"
 
-    # FDD references — no status display
     if [[ "$fdd_count" -gt 0 ]]; then
-      echo "<p><strong>FDD References:</strong>"
+      echo "<p><strong>FDD References:</strong><br>"
       while IFS= read -r fid; do
         [[ -z "$fid" ]] && continue
-        echo "<a href=\"$(fdd_url "$fid")\">${fid}</a>"
+        furl=$(xval "$MECHANISMS_XML" "${b}/fdd-ref[@id='${fid}']/@url")
+        fstat=$(xval "$MECHANISMS_XML" "${b}/fdd-ref[@id='${fid}']/@status")
+        fname=$(xval "$MECHANISMS_XML" "${b}/fdd-ref[@id='${fid}']/@name")
+        echo "<a href=\"${furl}\">${fid}</a> <small>(${fstat}: ${fname})</small><br>"
       done < <(xmlstarlet sel -t -m "${b}/fdd-ref[@status!='none']" -v "@id" -n "$MECHANISMS_XML" 2>/dev/null || true) || true
       echo "</p>"
     fi
 
     if [[ "$field_count" -gt 0 ]]; then
-      echo -e "<h3>Metadata Fields</h3>\n<table><tbody><tr><th data-sort='fname'>Field</th><th data-sort='fconcept'>CAP Concept</th><th>Description</th></tr>"
+      echo "<h3>Metadata Fields</h3>"
+      echo "<table><tbody><tr><th data-sort='fname'>Field</th><th data-sort='fconcept'>CAP Concept</th><th>Description</th></tr>"
       while IFS=$'\t' read -r fname fconcept fdesc; do
         [[ -z "$fname" ]] && continue
         echo "<tr><td><code>${fname}</code></td><td>${fconcept}</td><td>${fdesc}</td></tr>"
@@ -755,7 +795,7 @@ echo "Building mechanisms docs..."
       echo "</tbody></table>"
     fi
 
-    # Back-references: formats using this mechanism — as a table
+    # Back-references: formats using this mechanism
     ref_count=0
     ref_html=""
     while IFS= read -r fid; do
@@ -765,7 +805,8 @@ echo "Building mechanisms docs..."
       ref_count=$((ref_count + 1))
     done < <(xmlstarlet sel -t -m "//format[mechanisms/mechanism-ref[@id='${id}']]" -v "@id" -n "$FORMATS_XML" 2>/dev/null || true) || true
     if [[ "$ref_count" -gt 0 ]]; then
-      echo -e "<h3>Used by Formats</h3>\n<table><tbody><tr><th data-sort='fid'>ID</th><th data-sort='fname'>Name</th></tr>"
+      echo "<h3>Used by Formats</h3>"
+      echo "<table><tbody><tr><th data-sort='fid'>ID</th><th data-sort='fname'>Name</th></tr>"
       echo "$ref_html"
       echo "</tbody></table>"
     fi
@@ -777,8 +818,10 @@ echo "Building mechanisms docs..."
   echo "</body></html>"
 } > "$DOCS_DIR/mechanisms.html"
 
+# Markdown Report 
 {
-  echo -e "# Mechanisms Registry\n"
+  echo "# Mechanisms Registry"
+  echo ""
   toc_md "mechanism" "//mechanism" "/name" "$MECHANISMS_XML"
   while IFS= read -r id; do
     [[ -z "$id" ]] && continue
@@ -799,30 +842,45 @@ echo "Building mechanisms docs..."
     fdd_count=$(xcount "$MECHANISMS_XML" "${b}/fdd-ref[@status!='none']")
     field_count=$(xcount "$MECHANISMS_XML" "${b}/metadata-values/field")
 
-    echo -e "## ${name}\n"
+    echo "## ${name}"
+    echo ""
     echo "**ID:** \`${id}\`  "
     echo "**Type:** ${type}  "
     url_lines_md "$MECHANISMS_XML" "$b"
     echo ""
-    echo -e "### Editability\n\n| Level | Type | Notes |\n|---|---|---|"
+    echo "### Editability"
+    echo ""
+    echo "| Level | Type | Notes |"
+    echo "|---|---|---|"
     echo "| File-level | ${fl_t} | ${fl_v} |"
-    echo -e "| Content-level | ${cl_t} | ${cl_v} |\n"
-    echo -e "### Verifiability\n\n| Dimension | Type | Notes |\n|---|---|---|"
+    echo "| Content-level | ${cl_t} | ${cl_v} |"
+    echo ""
+    echo "### Verifiability"
+    echo ""
+    echo "| Dimension | Type | Notes |"
+    echo "|---|---|---|"
     echo "| Media integrity | ${mi_t} | ${mi_v} |"
     echo "| Metadata integrity | ${mdi_t} | ${mdi_v} |"
-    echo -e "| Chain of custody | ${coc_t} | ${coc_v} |\n"
+    echo "| Chain of custody | ${coc_t} | ${coc_v} |"
+    echo ""
 
     if [[ "$fdd_count" -gt 0 ]]; then
-      echo "**FDD References:**"
+      echo "**FDD References:**  "
       while IFS= read -r fid; do
         [[ -z "$fid" ]] && continue
-        echo "- [${fid}]($(fdd_url "$fid"))"
+        furl=$(xval "$MECHANISMS_XML" "${b}/fdd-ref[@id='${fid}']/@url")
+        fstat=$(xval "$MECHANISMS_XML" "${b}/fdd-ref[@id='${fid}']/@status")
+        fname=$(xval "$MECHANISMS_XML" "${b}/fdd-ref[@id='${fid}']/@name")
+        echo "- [${fid}](${furl}) (${fstat}: ${fname})  "
       done < <(xmlstarlet sel -t -m "${b}/fdd-ref[@status!='none']" -v "@id" -n "$MECHANISMS_XML" 2>/dev/null || true) || true
       echo ""
     fi
 
     if [[ "$field_count" -gt 0 ]]; then
-      echo -e "### Metadata Fields\n\n| Field | CAP Concept | Description |\n|---|---|---|"
+      echo "### Metadata Fields"
+      echo ""
+      echo "| Field | CAP Concept | Description |"
+      echo "|---|---|---|"
       while IFS=$'\t' read -r fname fconcept fdesc; do
         [[ -z "$fname" ]] && continue
         echo "| \`${fname}\` | ${fconcept} | ${fdesc} |"
@@ -830,12 +888,15 @@ echo "Building mechanisms docs..."
       echo ""
     fi
 
-    # Back-references to formats — as a table
+    # Back-references to formats
     ref_count=0
     while IFS= read -r fid; do
       [[ -z "$fid" ]] && continue
       if [[ "$ref_count" -eq 0 ]]; then
-        echo -e "### Used by Formats\n\n| ID | Name |\n|---|---|"
+        echo "### Used by Formats"
+        echo ""
+        echo "| ID | Name |"
+        echo "|---|---|"
       fi
       fname=$(xval "$FORMATS_XML" "//format[@id='${fid}']/name")
       echo "| \`${fid}\` | [${fname:-${fid}}](formats.md#${fid}) |"
@@ -843,17 +904,18 @@ echo "Building mechanisms docs..."
     done < <(xmlstarlet sel -t -m "//format[mechanisms/mechanism-ref[@id='${id}']]" -v "@id" -n "$FORMATS_XML" 2>/dev/null || true) || true
     [[ "$ref_count" -gt 0 ]] && echo ""
 
-    [[ -n "$desc" ]] && echo -e "${desc}\n"
+    [[ -n "$desc" ]] && echo "${desc}" && echo ""
     tcr_md "$MECHANISMS_XML" "$b"
-    echo -e "---\n"
+    echo "---"
+    echo ""
   done < <(xmlstarlet sel -t -m "//mechanism" -v "@id" -n "$MECHANISMS_XML" 2>/dev/null || true) || true
-} > "$DOCS_DIR/mechanisms.md"
+} > "$MD_DIR/mechanisms.md"
 
-echo "  -> docs/mechanisms.html, docs/mechanisms.md"
+echo "  -> docs/mechanisms.html, docs/markdown/mechanisms.md"
 
-# MECHANISMS — Complete Table
+# HTML Complete Table
 {
-  html_head "Mechanisms — Complete Table" "mechanisms"
+  html_head "Mechanisms: Complete Table" "mechanisms"
   subtabs_html "table" "mechanisms"
   echo "<p>Complete table with all fields including TCR4CAP comments.</p>"
   echo "<table id='mech-full'><tbody><tr><th data-sort='id'>ID</th><th data-sort='name'>Name</th><th data-sort='type'>Type</th><th data-sort='fl'>File-level</th><th data-sort='cl'>Content-level</th><th data-sort='mi'>Media Integrity</th><th data-sort='mdi'>Metadata Integrity</th><th data-sort='coc'>Chain of Custody</th><th>URL</th><th>Awareness</th><th>Tamper Evidence</th><th>Binding</th><th>AI Attribution</th><th>Substantiation</th><th>Interoperability</th></tr>"
@@ -873,8 +935,10 @@ echo "  -> docs/mechanisms.html, docs/mechanisms.md"
   echo "</tbody></table></body></html>"
 } > "$DOCS_DIR/mechanisms-table.html"
 
+# Markdown Complete Table 
 {
-  echo -e "# Mechanisms — Complete Table\n"
+  echo "# Mechanisms: Complete Table"
+  echo ""
   echo "| ID | Name | Type | File-level | Content-level | Media Integrity | Metadata Integrity | Chain of Custody | URL | Awareness | Tamper Evidence | Binding | AI Attribution | Substantiation | Interoperability |"
   echo "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
   while IFS= read -r id; do
@@ -890,10 +954,18 @@ echo "  -> docs/mechanisms.html, docs/mechanisms.md"
     struct_row_vars "$MECHANISMS_XML" "$b" md
     echo "| \`${id}\` | ${name} | ${type} | ${fl} | ${cl} | ${mi} | ${mdi} | ${coc} | ${url_cell} | ${aw:-—} | ${te:-—} | ${bi:-—} | ${ai:-—} | ${su:-—} | ${io:-—} |"
   done < <(xmlstarlet sel -t -m "//mechanism" -v "@id" -n "$MECHANISMS_XML" 2>/dev/null || true) || true
-} > "$DOCS_DIR/mechanisms-table.md"
+} > "$MD_DIR/mechanisms-table.md"
 
-echo "  -> docs/mechanisms-table.html, docs/mechanisms-table.md"
+echo "  -> docs/mechanisms-table.html, docs/markdown/mechanisms-table.md"
 
+# Summary
 echo ""
-echo "Build complete. Output in docs/:"
-ls "$DOCS_DIR"/*.html "$DOCS_DIR"/*.md 2>/dev/null | sed 's|.*/||' | column
+echo "Build complete."
+echo ""
+echo "HTML output (docs/):"
+ls "$DOCS_DIR"/*.html 2>/dev/null | sed 's|.*/||' | column
+echo ""
+echo "Markdown output (docs/markdown/):"
+ls "$MD_DIR"/*.md 2>/dev/null | sed 's|.*/||' | column
+echo ""
+echo "NOTE: Markdown files in docs/markdown/ are ready for PDF assembly, see assemble-pdf.sh."
