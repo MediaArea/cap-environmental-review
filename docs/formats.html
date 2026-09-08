@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formats Registry</title>
+  <style>
+    body  { font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; color: #1a1a1a; }
+    h1    { border-bottom: 3px solid #2c3e50; padding-bottom: .5rem; }
+    h2    { border-bottom: 1px solid #ccc; padding-bottom: .25rem; margin-top: 2.5rem; color: #2c3e50; }
+    h3    { color: #555; margin-top: 1.5rem; }
+    h4    { color: #666; margin-top: 1rem; }
+    table { border-collapse: collapse; width: 100%; margin: .75rem 0 1.5rem; font-size: .88rem; }
+    th    { background: #2c3e50; color: #fff; padding: .45rem .75rem; text-align: left; }
+    th[data-sort] { cursor: pointer; user-select: none; }
+    th[data-sort]::after { content: ' \21C5'; opacity: .4; font-size: .8em; }
+    th[data-sort].asc::after  { content: ' \2191'; opacity: 1; }
+    th[data-sort].desc::after { content: ' \2193'; opacity: 1; }
+    td    { padding: .4rem .75rem; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+    tr:nth-child(even) td { background: #f8f8f8; }
+    code  { background: #f0f0f0; padding: .1rem .35rem; border-radius: 3px; font-size: .85em; }
+    a     { color: #2980b9; }
+    .tcr  { background: #f9f9f9; border-left: 4px solid #2c3e50; padding: .6rem 1rem; margin: 1rem 0; }
+    .tcr h3 { margin-top: .5rem; }
+    .tcr table { margin: .5rem 0; }
+    .tcr th { background: #555; }
+    hr    { border: none; border-top: 1px solid #ddd; margin: 2.5rem 0; }
+    nav.tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid #2c3e50; }
+    nav.tabs a { padding: .6rem 1.2rem; color: #555; text-decoration: none; font-size: .92rem; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+    nav.tabs a:hover { background: #f4f4f4; color: #2c3e50; }
+    nav.tabs a.active { color: #2c3e50; border-bottom-color: #2c3e50; font-weight: 600; }
+    nav.subtabs { display: flex; gap: 0; margin: 1rem 0 1.5rem; }
+    nav.subtabs a { padding: .35rem .9rem; color: #777; text-decoration: none; font-size: .85rem; border: 1px solid #ddd; border-radius: 4px; margin-right: .5rem; }
+    nav.subtabs a:hover { background: #f4f4f4; }
+    nav.subtabs a.active { background: #2c3e50; color: #fff; border-color: #2c3e50; }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('th[data-sort]').forEach(function(th) {
+        th.addEventListener('click', function() { sortTable(th); });
+      });
+    });
+    function sortTable(th) {
+      var table = th.closest('table');
+      var tbody = table.querySelector('tbody');
+      if (!tbody) tbody = table;
+      var colIdx = Array.prototype.indexOf.call(th.parentElement.children, th);
+      var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr')).filter(function(r) {
+        return !r.querySelector('th');
+      });
+      var asc = th.classList.toggle('asc');
+      if (asc) { th.classList.remove('desc'); } else { th.classList.add('desc'); th.classList.remove('asc'); }
+      rows.sort(function(a, b) {
+        var va = (a.cells[colIdx] || {}).textContent || '';
+        var vb = (b.cells[colIdx] || {}).textContent || '';
+        va = va.trim(); vb = vb.trim();
+        return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+      });
+      rows.forEach(function(r) { tbody.appendChild(r); });
+    }
+  </script>
+</head>
+<body>
+<nav class="tabs">
+  <a href="index.html">Registry Introduction</a>
+  <a href="tools.html">Tools</a>
+  <a href="formats.html" class='active'>Formats</a>
+  <a href="mechanisms.html">Mechanisms</a>
+</nav>
+<h1>Formats Registry</h1>
+<nav class="subtabs">
+  <a href="formats.html" class='active'>Report</a>
+  <a href="formats-table.html">Complete Table</a>
+</nav>
+<h2 id='contents'>Table of Contents</h2>
+<table><tbody><tr><th data-sort='id'>ID</th><th data-sort='name'>Name</th></tr>
+<tr><td><a href='#format-bwf'><code>bwf</code></a></td><td>Broadcast WAVE Format (BWF)</td></tr>
+<tr><td><a href='#format-flac'><code>flac</code></a></td><td>FLAC (Free Lossless Audio Codec)</td></tr>
+<tr><td><a href='#format-jpeg'><code>jpeg</code></a></td><td>JPEG</td></tr>
+<tr><td><a href='#format-png'><code>png</code></a></td><td>PNG (Portable Network Graphics)</td></tr>
+<tr><td><a href='#format-tiff'><code>tiff</code></a></td><td>TIFF (Tagged Image File Format)</td></tr>
+<tr><td><a href='#format-mp4-isobmff'><code>mp4-isobmff</code></a></td><td>MP4 / ISO Base Media File Format</td></tr>
+<tr><td><a href='#format-mkv'><code>mkv</code></a></td><td>Matroska (MKV)</td></tr>
+<tr><td><a href='#format-c2pa-manifest'><code>c2pa-manifest</code></a></td><td>C2PA Manifest (Content Credentials)</td></tr>
+<tr><td><a href='#format-xmp'><code>xmp</code></a></td><td>XMP (Extensible Metadata Platform)</td></tr>
+<tr><td><a href='#format-exif'><code>exif</code></a></td><td>EXIF (Exchangeable Image File Format)</td></tr>
+<tr><td><a href='#format-iptc-photo'><code>iptc-photo</code></a></td><td>IPTC Photo Metadata Standard 2025.1</td></tr>
+<tr><td><a href='#format-premis'><code>premis</code></a></td><td>PREMIS (Preservation Metadata)</td></tr>
+<tr><td><a href='#format-bagit'><code>bagit</code></a></td><td>BagIt (RFC 8493)</td></tr>
+<tr><td><a href='#format-mets'><code>mets</code></a></td><td>METS (Metadata Encoding and Transmission Standard)</td></tr>
+</tbody></table>
+<h2 id='report'>Report</h2>
+<table id='formats-main'><tbody><tr><th data-sort='id'>ID</th><th data-sort='name'>Name</th><th data-sort='type'>Type</th><th data-sort='struct'>Structure</th><th data-sort='read'>Readability</th><th data-sort='verify'>Verifiability</th></tr>
+<tr><td><a href='#format-bwf'><code>bwf</code></a></td><td>Broadcast WAVE Format (BWF)</td><td>audio</td><td><code>binary-chunk</code></td><td>open</td><td>integrity-only</td></tr>
+<tr><td><a href='#format-flac'><code>flac</code></a></td><td>FLAC (Free Lossless Audio Codec)</td><td>audio</td><td><code>binary-block</code></td><td>open</td><td>integrity-only</td></tr>
+<tr><td><a href='#format-jpeg'><code>jpeg</code></a></td><td>JPEG</td><td>image</td><td><code>binary-segment</code></td><td>published-standard</td><td>signed</td></tr>
+<tr><td><a href='#format-png'><code>png</code></a></td><td>PNG (Portable Network Graphics)</td><td>image</td><td><code>binary-chunk</code></td><td>open</td><td>signed</td></tr>
+<tr><td><a href='#format-tiff'><code>tiff</code></a></td><td>TIFF (Tagged Image File Format)</td><td>image</td><td><code>binary</code></td><td>open</td><td>signed</td></tr>
+<tr><td><a href='#format-mp4-isobmff'><code>mp4-isobmff</code></a></td><td>MP4 / ISO Base Media File Format</td><td>moving image</td><td><code>binary-atom</code></td><td>published-standard</td><td>signed</td></tr>
+<tr><td><a href='#format-mkv'><code>mkv</code></a></td><td>Matroska (MKV)</td><td>moving image</td><td><code>binary-ebml</code></td><td>open</td><td>none</td></tr>
+<tr><td><a href='#format-c2pa-manifest'><code>c2pa-manifest</code></a></td><td>C2PA Manifest (Content Credentials)</td><td>metadata</td><td><code>cbor-jumbf</code></td><td>published-standard</td><td>signed</td></tr>
+<tr><td><a href='#format-xmp'><code>xmp</code></a></td><td>XMP (Extensible Metadata Platform)</td><td>metadata</td><td><code>xml-rdf</code></td><td>published-standard</td><td>none</td></tr>
+<tr><td><a href='#format-exif'><code>exif</code></a></td><td>EXIF (Exchangeable Image File Format)</td><td>metadata</td><td><code>binary</code></td><td>open</td><td>none</td></tr>
+<tr><td><a href='#format-iptc-photo'><code>iptc-photo</code></a></td><td>IPTC Photo Metadata Standard 2025.1</td><td>metadata</td><td><code>xml-xmp</code></td><td>open</td><td>none</td></tr>
+<tr><td><a href='#format-premis'><code>premis</code></a></td><td>PREMIS (Preservation Metadata)</td><td>metadata</td><td><code>xml</code></td><td>open</td><td>integrity-only</td></tr>
+<tr><td><a href='#format-bagit'><code>bagit</code></a></td><td>BagIt (RFC 8493)</td><td>metadata</td><td><code>text-manifest</code></td><td>open</td><td>integrity-only</td></tr>
+<tr><td><a href='#format-mets'><code>mets</code></a></td><td>METS (Metadata Encoding and Transmission Standard)</td><td>metadata</td><td><code>xml</code></td><td>open</td><td>integrity-only</td></tr>
+</tbody></table>
+<h2 id='format-bwf'>Broadcast WAVE Format (BWF)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>bwf</code></td></tr>
+<tr><td>Type</td><td>audio</td></tr>
+<tr><td>Structure</td><td><code>binary-chunk</code></td></tr>
+<tr><td>Readability</td><td><code>open</code> &mdash; EBU Tech 3285 and FADGI specifications are publicly available; no licensing restrictions on implementation or use.</td></tr>
+<tr><td>Verifiability</td><td><code>integrity-only</code> &mdash; No native cryptographic signing. BEXT chunk carries CodingHistory, originator, and origination date/time as advisory provenance fields. BWF may store XMP data. C2PA stored in a custom C2PA RIFF chunk provides cryptographic signing when present.</td></tr>
+<tr><td>Persistence</td><td>Widely adopted archival audio format with long-term institutional support from EBU, FADGI, and national archives.</td></tr>
+<tr><td>FDD References</td><td>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000356.shtml">FDD000356</a> <small>(full: Broadcast WAVE Audio File Format, Version 1)</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000357.shtml">FDD000357</a> <small>(full: Broadcast WAVE Audio File Format, Version 2)</small><br>
+</td></tr>
+<tr><td>URL</td><td>guidelines: <a href="https://www.digitizationguidelines.gov/guidelines/digitize-embedding.html">https://www.digitizationguidelines.gov/guidelines/digitize-embedding.html</a></td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>embedded-riff-chunk:</strong> C2PA manifest store may be embedded in a custom C2PA RIFF chunk within the BWF file; hard binding to audio content via C2PA cryptographic signing chain.</li><li><strong>sidecar:</strong> C2PA manifest store delivered as a standalone .c2pa sidecar file alongside the BWF asset; uses C2PA soft binding. Relationship must be maintained by the packaging or delivery layer.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td>
+<table><tbody><tr><th data-sort='mname'>Mechanism</th><th data-sort='mtype'>Type</th><th data-sort='mfl'>File-level</th><th data-sort='mcl'>Content-level</th><th data-sort='mmdi'>Metadata Integrity</th></tr>
+<tr><td><a href='mechanisms.html#mechanism-bext-chunk'>bext-chunk</a></td><td></td><td></td><td></td><td></td></tr>
+<tr><td><a href='mechanisms.html#mechanism-xmp-embedded'>XMP Embedded Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-jumbf-c2pa'>JUMBF C2PA Manifest Store (Embedded)</a></td><td>embedded-c2pa</td><td>embedded-writable</td><td>append-only</td><td>signed</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-premis'>PREMIS Sidecar / Embedded Event Record</a></td><td>sidecar-metadata</td><td>sidecar-writable</td><td>append</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-c2pa'>C2PA Sidecar Manifest</a></td><td>sidecar-c2pa</td><td>sidecar-writable</td><td>append-only</td><td>signed</td></tr>
+</tbody></table></td></tr>
+</tbody></table>
+<p>EBU/FADGI standard audio format based on RIFF/WAVE. BEXT chunk carries CodingHistory, originator, origination date/time, and UMID. C2PA stored in a custom C2PA RIFF chunk. Widely used as the archival master or primary format for audio in broadcast, library, and archival workflows. Supported by BWF MetaEdit for metadata embedding and validation.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>BWF is a well-established archival audio format. BEXT chunk provenance fields are widely understood in broadcast and archival workflows. C2PA embedding path is defined but not yet widely implemented in BWF-specific tooling.</td></tr>
+<tr><td>Tamper Evidence</td><td>BEXT chunk fields are informative and not integrity-protected. They can be silently overwritten, edited, added, or removed. C2PA RIFF chunk provides cryptographic tamper-evidence when present.</td></tr>
+<tr><td>Binding</td><td>BEXT chunk is structurally embedded. C2PA RIFF chunk provides cryptographic hard binding to audio content when present. An md5 chunk may store the md5 hash of the audio content.</td></tr>
+<tr><td>AI Attribution</td><td>No purpose-built AI attribution fields in the BWF/BEXT specification. AI documentation requires C2PA assertions or repurposing of CodingHistory.</td></tr>
+<tr><td>Substantiation</td><td>BEXT CodingHistory provides a readable transformation record. C2PA manifest store could preserve a full transformation history when present.</td></tr>
+<tr><td>Interoperability</td><td>Open specification (EBU Tech 3285, FADGI). Widely implemented across broadcast, archival, and audio tools.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-flac'>FLAC (Free Lossless Audio Codec)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>flac</code></td></tr>
+<tr><td>Type</td><td>audio</td></tr>
+<tr><td>Structure</td><td><code>binary-block</code></td></tr>
+<tr><td>Readability</td><td><code>open</code> &mdash; Full open specification originally published by Xiph.org and later standardized as IETF RFC 9639; no licensing restrictions on implementation or use.</td></tr>
+<tr><td>Verifiability</td><td><code>integrity-only</code> &mdash; Natively stores an MD5 signature of unencoded audio in the STREAMINFO block and CRC-8/CRC-16 checksums per frame (RFC 9639). Provides format-level integrity verification of audio data only; checksums do not cover metadata blocks. No signature or provenance chain in the base format.</td></tr>
+<tr><td>Persistence</td><td>Open, lossless, widely implemented format. Long-term institutional support via IETF standardization (RFC 9639).</td></tr>
+<tr><td>FDD References</td><td>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000657.shtml">FDD000657</a> <small>(full: FLAC Family)</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000198.shtml">FDD000198</a> <small>(full: FLAC (Free Lossless Audio Codec), Version 1.1.2)</small><br>
+</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>embedded-via-id3:</strong> C2PA manifest store embedded using the ID3 General Encapsulated Object frame (GEOB); hard binding to audio content via C2PA cryptographic signing chain.</li><li><strong>sidecar:</strong> C2PA manifest store delivered as a standalone .c2pa sidecar file alongside the FLAC asset; uses C2PA soft binding. Relationship must be maintained by the packaging or delivery layer.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td>
+<table><tbody><tr><th data-sort='mname'>Mechanism</th><th data-sort='mtype'>Type</th><th data-sort='mfl'>File-level</th><th data-sort='mcl'>Content-level</th><th data-sort='mmdi'>Metadata Integrity</th></tr>
+<tr><td><a href='mechanisms.html#mechanism-vorbis-comment'>Vorbis Comment</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-id3-geob-c2pa'>ID3 General Encapsulated Object (GEOB) — C2PA</a></td><td>embedded-c2pa</td><td>embedded-writable</td><td>append-only</td><td>signed</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-xmp-embedded'>XMP Embedded Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-premis'>PREMIS Sidecar / Embedded Event Record</a></td><td>sidecar-metadata</td><td>sidecar-writable</td><td>append</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-c2pa'>C2PA Sidecar Manifest</a></td><td>sidecar-c2pa</td><td>sidecar-writable</td><td>append-only</td><td>signed</td></tr>
+</tbody></table></td></tr>
+</tbody></table>
+<p>A container for the FLAC lossless audio codec. C2PA embedding is supported via ID3 using the General Encapsulated Object frame (GEOB). Natively stores an MD5 signature of unencoded audio in the STREAMINFO block and CRC-8/CRC-16 checksums per frame (RFC 9639), providing format-level integrity verification of audio data. These checksums do not cover metadata blocks.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>C2PA-specific awareness in FLAC workflows is not yet common. The GEOB embedding path is defined but not widely recognized in tooling or policy.</td></tr>
+<tr><td>Tamper Evidence</td><td>Native MD5 (STREAMINFO) and per-frame CRCs (RFC 9639) provide structured format-level integrity of audio data. These do not cover metadata blocks; tamper-evidence of CAP data depends on the mechanism used.</td></tr>
+<tr><td>Binding</td><td>The format defines discrete metadata blocks and a specified C2PA embedding location (ID3 GEOB). Binding strength depends on the mechanism used.</td></tr>
+<tr><td>AI Attribution</td><td>No purpose-built AI attribution fields in the FLAC or Vorbis Comment specification. Any AI documentation requires repurposing general fields or use of C2PA via GEOB.</td></tr>
+<tr><td>Substantiation</td><td>FLAC metadata is open and readable. No formal mechanism for publishing transformation history or CAP policies at point of access at the format level.</td></tr>
+<tr><td>Interoperability</td><td>Open specification (Xiph.org, RFC 9639). Widely implemented across tools and platforms. ID3 broadly supported.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-jpeg'>JPEG</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>jpeg</code></td></tr>
+<tr><td>Type</td><td>image</td></tr>
+<tr><td>Structure</td><td><code>binary-segment</code></td></tr>
+<tr><td>Readability</td><td><code>published-standard</code> &mdash; ISO/IEC 10918 and ITU-T T.81; open standard with no licensing restrictions on implementation or use.</td></tr>
+<tr><td>Verifiability</td><td><code>signed</code> &mdash; C2PA stored in APP11 (0xFFEB) chunk provides cryptographic signing and hard binding to image content. EXIF, IPTC, and XMP metadata in APP1/APP13 are informative and not integrity-protected. JPEG Trust (ISO/IEC 21617) provides an additional trust framework.</td></tr>
+<tr><td>Persistence</td><td>Lossy compression limits use as an archival master or primary format; widely used for distribution and delivery. C2PA manifest survives most JPEG-preserving operations.</td></tr>
+<tr><td>FDD References</td><td>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000017.shtml">FDD000017</a> <small>(full: JPEG Image Encoding Family)</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000018.shtml">FDD000018</a> <small>(full: JFIF, JPEG File Interchange Format, Version 1.02)</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000147.shtml">FDD000147</a> <small>(full: JPEG Encoded File with Exif Metadata)</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000538.shtml">FDD000538</a> <small>(preliminary: JPEG XL File Format)</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000653.shtml">FDD000653</a> <small>(partial: JPEG Universal Metadata Box Format (JUMBF))</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000655.shtml">FDD000655</a> <small>(preliminary: JPEG XT (JPEG eXTension))</small><br>
+</td></tr>
+<tr><td>URL</td><td>homepage: <a href="https://jpeg.org/">https://jpeg.org/</a></td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>embedded-app11:</strong> C2PA manifest store embedded in APP11 (0xFFEB) chunk. Multiple sequential APP11 segments used for large manifests. Hard binding to image content via content hash. The C2PA Technical Specifications cite JPEG XT, ISO/IEC 18477-3 (which defines the JPEG file format) as the basis of the definition of the APP11 structure that stores the C2PA manifest store. If a manifest is embedded in the center of a JPEG-1 file in an APP11 segment, the claim creator may exclude the APP11 segment(s) from the hash calculation, as defined in C2PA specification 2.4.</li><li><strong>sidecar:</strong> C2PA manifest store delivered as a standalone .c2pa sidecar file; uses C2PA soft binding.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td>
+<table><tbody><tr><th data-sort='mname'>Mechanism</th><th data-sort='mtype'>Type</th><th data-sort='mfl'>File-level</th><th data-sort='mcl'>Content-level</th><th data-sort='mmdi'>Metadata Integrity</th></tr>
+<tr><td><a href='mechanisms.html#mechanism-exif-embedded'>EXIF Embedded Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-xmp-embedded'>XMP Embedded Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-iptc-photo'>IPTC Photo Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-jumbf-c2pa'>JUMBF C2PA Manifest Store (Embedded)</a></td><td>embedded-c2pa</td><td>embedded-writable</td><td>append-only</td><td>signed</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-premis'>PREMIS Sidecar / Embedded Event Record</a></td><td>sidecar-metadata</td><td>sidecar-writable</td><td>append</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-c2pa'>C2PA Sidecar Manifest</a></td><td>sidecar-c2pa</td><td>sidecar-writable</td><td>append-only</td><td>signed</td></tr>
+</tbody></table></td></tr>
+</tbody></table>
+<p>JPEG (ISO/IEC 10918) is a dominant photographic image format with a segment-based structure (SOI, APPn, DQT, DHT, SOS, EOI). Supports EXIF (APP1), IPTC (APP13), and XMP (APP1) metadata. JPEG Trust (ISO/IEC 21617) provides an additional trust framework. Widely adopted by camera manufacturers (Leica M11-P, Nikon Z6 III) for C2PA signing at capture.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>JPEG is a widely deployed image format and has relatively extensive support with metadata processing tools. C2PA embedding in APP11 is a defined, published standard with broad industry adoption.</td></tr>
+<tr><td>Tamper Evidence</td><td>C2PA APP11 chunk provides cryptographic tamper-evidence via signed manifests and hard binding to image content.</td></tr>
+<tr><td>Binding</td><td>C2PA hard binding via content hash provides cryptographic linkage between manifest and image content.</td></tr>
+<tr><td>AI Attribution</td><td>C2PA AI attribution assertions (c2pa.ai.generatedWith, c2pa.training-mining) and IPTC 2025.1 AI fields are both supported in JPEG.</td></tr>
+<tr><td>Substantiation</td><td>C2PA manifest store preserves full transformation history. External trust anchors supported. Public verification via contentcredentials.org.</td></tr>
+<tr><td>Interoperability</td><td>Universally implemented across cameras, phones, image editing tools, and repository systems.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-png'>PNG (Portable Network Graphics)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>png</code></td></tr>
+<tr><td>Type</td><td>image</td></tr>
+<tr><td>Structure</td><td><code>binary-chunk</code></td></tr>
+<tr><td>Readability</td><td><code>open</code> &mdash; ISO/IEC 15948 and W3C PNG specification; open standard with no licensing restrictions.</td></tr>
+<tr><td>Verifiability</td><td><code>signed</code> &mdash; C2PA stored in custom caBX chunk provides cryptographic signing and hard binding to image content. XMP and EXIF metadata in iTXt/eXIf chunks are informative and not integrity-protected. PNG CRC checksums provide per-chunk structural integrity only.</td></tr>
+<tr><td>Persistence</td><td>Lossless compression; widely used as an archival and distribution format for images requiring transparency or lossless fidelity. Recommended by FADGI for Documents (Unbound): Modern Textual Records: https://www.digitizationguidelines.gov/guidelines/FADGITechnicalGuidelinesforDigitizingCulturalHeritageMaterials_ThirdEdition_05092023.pdf</td></tr>
+<tr><td>FDD References</td><td>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000153.shtml">FDD000153</a> <small>(full: Portable Network Graphics)</small><br>
+</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>embedded-cabx-chunk:</strong> C2PA manifest store embedded in custom caBX chunk. Hard binding to image content via content hash.</li><li><strong>sidecar:</strong> C2PA manifest store delivered as a standalone .c2pa sidecar file; uses C2PA soft binding.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td>
+<table><tbody><tr><th data-sort='mname'>Mechanism</th><th data-sort='mtype'>Type</th><th data-sort='mfl'>File-level</th><th data-sort='mcl'>Content-level</th><th data-sort='mmdi'>Metadata Integrity</th></tr>
+<tr><td><a href='mechanisms.html#mechanism-exif-embedded'>EXIF Embedded Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-xmp-embedded'>XMP Embedded Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-iptc-photo'>IPTC Photo Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-jumbf-c2pa'>JUMBF C2PA Manifest Store (Embedded)</a></td><td>embedded-c2pa</td><td>embedded-writable</td><td>append-only</td><td>signed</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-premis'>PREMIS Sidecar / Embedded Event Record</a></td><td>sidecar-metadata</td><td>sidecar-writable</td><td>append</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-c2pa'>C2PA Sidecar Manifest</a></td><td>sidecar-c2pa</td><td>sidecar-writable</td><td>append-only</td><td>signed</td></tr>
+</tbody></table></td></tr>
+</tbody></table>
+<p>PNG (ISO/IEC 15948) is a lossless image format with a chunk-based structure. C2PA stored in custom caBX chunk. Also supports XMP (iTXt), EXIF (eXIf), and text metadata (tEXt/zTXt) chunks. Strong archival format; widely used for images requiring transparency or lossless fidelity.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>PNG is a widely deployed image format. C2PA embedding in caBX chunk is a defined, published standard.</td></tr>
+<tr><td>Tamper Evidence</td><td>C2PA caBX chunk provides cryptographic tamper-evidence via signed manifests and hard binding to image content.</td></tr>
+<tr><td>Binding</td><td>C2PA hard binding via content hash provides cryptographic linkage between manifest and image content.</td></tr>
+<tr><td>AI Attribution</td><td>C2PA AI attribution assertions and IPTC 2025.1 AI fields are both supported in PNG.</td></tr>
+<tr><td>Substantiation</td><td>C2PA manifest store preserves full transformation history. External trust anchors supported.</td></tr>
+<tr><td>Interoperability</td><td>Widely implemented across image editing tools, browsers, and repository systems.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-tiff'>TIFF (Tagged Image File Format)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>tiff</code></td></tr>
+<tr><td>Type</td><td>image</td></tr>
+<tr><td>Structure</td><td><code>binary</code></td></tr>
+<tr><td>Readability</td><td><code>open</code> &mdash; Open standard with no licensing restrictions on implementation or use.</td></tr>
+<tr><td>Verifiability</td><td><code>signed</code> &mdash; C2PA manifests can be natively embedded in TIFF via a JUMBF box stored in the IFD structure, as defined in C2PA specification 2.4, providing cryptographic signing and hard binding to the content. A sidecar .c2pa file is also supported as an alternative delivery path. Native TIFF metadata (EXIF, IPTC, XMP) is informative and not integrity-protected outside of C2PA.</td></tr>
+<tr><td>Persistence</td><td>Widely used archival image format; long-term institutional support from libraries, archives, and digitization programs. Recommended by FADGI for Documents (Unbound): Modern Textual Records: https://www.digitizationguidelines.gov/guidelines/FADGITechnicalGuidelinesforDigitizingCulturalHeritageMaterials_ThirdEdition_05092023.pdf</td></tr>
+<tr><td>FDD References</td><td>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000022.shtml">FDD000022</a> <small>(full: TIFF, Revision 6.0)</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000145.shtml">FDD000145</a> <small>(full: TIFF Uncompressed File with Exif Metadata)</small><br>
+</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>embedded-jumbf-ifd:</strong> C2PA manifest store embedded via a JUMBF box stored in the TIFF IFD structure, as defined in C2PA specification 2.4. Hard binding to image content via C2PA cryptographic signing chain. Use of a general box binding is strongly recommended per C2PA guidance.</li><li><strong>sidecar:</strong> C2PA manifest store delivered as a standalone .c2pa sidecar file alongside the TIFF asset; uses C2PA soft binding. Relationship must be maintained by the packaging or delivery layer.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td>
+<table><tbody><tr><th data-sort='mname'>Mechanism</th><th data-sort='mtype'>Type</th><th data-sort='mfl'>File-level</th><th data-sort='mcl'>Content-level</th><th data-sort='mmdi'>Metadata Integrity</th></tr>
+<tr><td><a href='mechanisms.html#mechanism-exif-embedded'>EXIF Embedded Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-xmp-embedded'>XMP Embedded Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-iptc-photo'>IPTC Photo Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-jumbf-c2pa'>JUMBF C2PA Manifest Store (Embedded)</a></td><td>embedded-c2pa</td><td>embedded-writable</td><td>append-only</td><td>signed</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-c2pa'>C2PA Sidecar Manifest</a></td><td>sidecar-c2pa</td><td>sidecar-writable</td><td>append-only</td><td>signed</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-premis'>PREMIS Sidecar / Embedded Event Record</a></td><td>sidecar-metadata</td><td>sidecar-writable</td><td>append</td><td>none</td></tr>
+</tbody></table></td></tr>
+</tbody></table>
+<p>TIFF is a widely used archival image format with a tag-based IFD structure. Supports EXIF (SubIFD), IPTC (tag 33723), and XMP (tag 700) metadata. C2PA manifests can be natively embedded via a JUMBF box in the IFD structure per C2PA specification 2.4; a sidecar .c2pa file is also supported. Common digitization master or primary format in library and archival workflows.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>TIFF is a well-established archival format recommended by FADGI for digitization of cultural heritage materials. EXIF, IPTC, and XMP provenance fields are widely understood. C2PA embedding via JUMBF box in the IFD structure is defined in C2PA specification 2.4 but not yet widely implemented in TIFF-specific tooling.</td></tr>
+<tr><td>Tamper Evidence</td><td>EXIF, IPTC, and XMP metadata are informative and not integrity-protected. C2PA JUMBF embedding provides cryptographic tamper-evidence via signed manifests and hard binding to image content when present.</td></tr>
+<tr><td>Binding</td><td>C2PA hard binding via content hash provides cryptographic linkage between manifest and image content when embedded. Sidecar binding is soft and depends on file management conventions.</td></tr>
+<tr><td>AI Attribution</td><td>C2PA AI attribution assertions (c2pa.ai.generatedWith, c2pa.training-mining) and IPTC 2025.1 AI fields (via XMP) are both supported in TIFF.</td></tr>
+<tr><td>Substantiation</td><td>EXIF, IPTC, and XMP provide a readable provenance record. C2PA manifest store preserves full transformation history when present. PREMIS sidecar provides institutional transformation history.</td></tr>
+<tr><td>Interoperability</td><td>Universally implemented across image editing tools, scanners, and repository systems.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-mp4-isobmff'>MP4 / ISO Base Media File Format</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>mp4-isobmff</code></td></tr>
+<tr><td>Type</td><td>moving image</td></tr>
+<tr><td>Structure</td><td><code>binary-atom</code></td></tr>
+<tr><td>Readability</td><td><code>published-standard</code> &mdash; ISO/IEC 14496-12 (ISOBMFF); open standard. MP4 file format (ISO/IEC 14496-14) and related derivatives (MOV, MJ2, 3GP) are based on the same box/atom structure.</td></tr>
+<tr><td>Verifiability</td><td><code>signed</code> &mdash; C2PA stored in uuid atom provides cryptographic signing and hard binding to video content. XMP and other metadata atoms are informative and not integrity-protected.</td></tr>
+<tr><td>Persistence</td><td>Widely used video container format; long-term institutional support from ISO, MPEG, and industry. Widely used for archival and distribution of video content.</td></tr>
+<tr><td>FDD References</td><td>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000079.shtml">FDD000079</a> <small>(full: ISO Base Media File Format)</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000155.shtml">FDD000155</a> <small>(full: MPEG-4 File Format, Version 2)</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000525.shtml">FDD000525</a> <small>(preliminary: High Efficiency Image File (HEIF) Format, MPEG-H Part 12)</small><br>
+</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>embedded-uuid-atom:</strong> C2PA manifest store embedded in uuid atom (UUID: d8fec3d6-1b0e-483c-9297-5844b8f49b68). Hard binding to video content via content hash. Covers MP4, MOV, MJ2, 3GP, and other ISO-BMFF derivatives.</li><li><strong>sidecar:</strong> C2PA manifest store delivered as a standalone .c2pa sidecar file; uses C2PA soft binding.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td>
+<table><tbody><tr><th data-sort='mname'>Mechanism</th><th data-sort='mtype'>Type</th><th data-sort='mfl'>File-level</th><th data-sort='mcl'>Content-level</th><th data-sort='mmdi'>Metadata Integrity</th></tr>
+<tr><td><a href='mechanisms.html#mechanism-xmp-embedded'>XMP Embedded Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-jumbf-c2pa'>JUMBF C2PA Manifest Store (Embedded)</a></td><td>embedded-c2pa</td><td>embedded-writable</td><td>append-only</td><td>signed</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-premis'>PREMIS Sidecar / Embedded Event Record</a></td><td>sidecar-metadata</td><td>sidecar-writable</td><td>append</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-c2pa'>C2PA Sidecar Manifest</a></td><td>sidecar-c2pa</td><td>sidecar-writable</td><td>append-only</td><td>signed</td></tr>
+</tbody></table></td></tr>
+</tbody></table>
+<p>MP4 / ISO Base Media File Format (ISO/IEC 14496-12) is the primary video container format for C2PA implementations. C2PA stored in uuid atom. Covers MP4, MOV, MJ2, 3GP, and other ISO-BMFF derivatives. Supports XMP, IPTC, and other metadata in dedicated atoms.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>MP4/ISOBMFF is the widely used video container format. C2PA embedding in uuid atom is a defined, published standard with growing industry adoption.</td></tr>
+<tr><td>Tamper Evidence</td><td>C2PA uuid atom provides cryptographic tamper-evidence via signed manifests and hard binding to video content.</td></tr>
+<tr><td>Binding</td><td>C2PA hard binding via content hash provides cryptographic linkage between manifest and video content.</td></tr>
+<tr><td>AI Attribution</td><td>C2PA AI attribution assertions (c2pa.ai.generatedWith, c2pa.training-mining) are fully supported in MP4/ISOBMFF.</td></tr>
+<tr><td>Substantiation</td><td>C2PA manifest store preserves full transformation history. External trust anchors supported.</td></tr>
+<tr><td>Interoperability</td><td>Universally implemented across video tools, cameras, and repository systems.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-mkv'>Matroska (MKV)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>mkv</code></td></tr>
+<tr><td>Type</td><td>moving image</td></tr>
+<tr><td>Structure</td><td><code>binary-ebml</code></td></tr>
+<tr><td>Readability</td><td><code>open</code> &mdash; Matroska specification published by the Matroska.org community; IETF RFC 9559 (EBML) provides the underlying container standard.</td></tr>
+<tr><td>Verifiability</td><td><code>none</code> &mdash; No native cryptographic signing (though an early EBML draft included an Element signing feature which was dropped before standardization). Tag and attachment elements can store UTF-8 and binary metadata. Any Matroska Element may store a hash of the following content of the Element. This feature can verify integrity of the Element against the stored hash (if it exists), but there is no signature mechanism. No C2PA embedding path is defined in the C2PA Technical Specification as of 2026-06.</td></tr>
+<tr><td>Persistence</td><td>Open container format. Widely used in archival video workflows and video distribution. Long-term support from the Matroska community and IETF Cellar working group.</td></tr>
+<tr><td>FDD References</td><td>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000342.shtml">FDD000342</a> <small>(full: Matroska Multimedia Container)</small><br>
+<a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000516.shtml">FDD000516</a> <small>(preliminary: Extensible Binary Meta Language)</small><br>
+</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>sidecar:</strong> C2PA manifest store delivered as a standalone .c2pa sidecar file alongside the MKV asset; uses C2PA soft binding. No native MKV embedding path is defined in the C2PA Technical Specification as of 2026-05.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td>
+<table><tbody><tr><th data-sort='mname'>Mechanism</th><th data-sort='mtype'>Type</th><th data-sort='mfl'>File-level</th><th data-sort='mcl'>Content-level</th><th data-sort='mmdi'>Metadata Integrity</th></tr>
+<tr><td><a href='mechanisms.html#mechanism-xmp-embedded'>XMP Embedded Metadata</a></td><td>embedded-metadata</td><td>embedded-writable</td><td>overwrite</td><td>none</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-c2pa'>C2PA Sidecar Manifest</a></td><td>sidecar-c2pa</td><td>sidecar-writable</td><td>append-only</td><td>signed</td></tr>
+<tr><td><a href='mechanisms.html#mechanism-sidecar-premis'>PREMIS Sidecar / Embedded Event Record</a></td><td>sidecar-metadata</td><td>sidecar-writable</td><td>append</td><td>none</td></tr>
+</tbody></table></td></tr>
+</tbody></table>
+<p>Matroska (MKV) is an open container format based on EBML (RFC 9559). Supports tags and attachments for metadata. No native C2PA embedding path defined as of 2026-05. Used in some archival video workflows and widely in consumer distribution.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>Matroska is a well-known container format. No native C2PA embedding path is defined; C2PA awareness in MKV workflows is limited.</td></tr>
+<tr><td>Tamper Evidence</td><td>No native cryptographic signing. Tag and attachment metadata are advisory and not integrity-protected. C2PA sidecar provides tamper-evidence but can be separated from the asset.</td></tr>
+<tr><td>Binding</td><td>No native C2PA embedding path. Sidecar binding is soft and depends on file management conventions.</td></tr>
+<tr><td>AI Attribution</td><td>No purpose-built AI attribution fields in the Matroska specification. AI documentation requires C2PA sidecar or repurposing of tag elements.</td></tr>
+<tr><td>Substantiation</td><td>Tag elements provide a readable metadata record. No formal mechanism for publishing transformation history at the format level.</td></tr>
+<tr><td>Interoperability</td><td>Open specification. Widely implemented across video tools and platforms.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-c2pa-manifest'>C2PA Manifest (Content Credentials)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>c2pa-manifest</code></td></tr>
+<tr><td>Type</td><td>metadata</td></tr>
+<tr><td>Structure</td><td><code>cbor-jumbf</code></td></tr>
+<tr><td>Readability</td><td><code>published-standard</code> &mdash; C2PA Technical Specification published by the Coalition for Content Provenance and Authenticity; open specification with reference implementation (c2pa-rs) under open-source license.</td></tr>
+<tr><td>Verifiability</td><td><code>signed</code> &mdash; Each manifest is cryptographically signed using CMS/COSE. Hard binding links the manifest to the asset content via content hash. The manifest store is append-only; prior manifests are preserved as ingredient references. Any modification to a manifest or to the asset content invalidates the signature or binding.</td></tr>
+<tr><td>Persistence</td><td>Append-only manifest store preserves the full provenance chain across the asset lifecycle. Signed manifests are immutable. External trust anchors (TSA, credential issuers) provide long-term verifiability.</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>embedded:</strong> Embedded in host files via format-specific JUMBF containers (APP11 in JPEG, caBX in PNG, uuid atom in MP4/ISOBMFF, C2PA RIFF chunk in WAV/BWF).</li><li><strong>sidecar:</strong> Stored as a standalone .c2pa sidecar file alongside the asset.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td><em>none</em></td></tr>
+</tbody></table>
+<p>Core C2PA metadata format. CBOR-encoded assertions in a JUMBF container. Cryptographically signed using CMS/COSE. Embedded in media files via format-specific containers or stored as a standalone .c2pa sidecar file. Supports hard binding (content hash) and soft binding (perceptual identifier). Defines purpose-built assertions for AI generative and training provenance (c2pa.ai.generatedWith, c2pa.training-mining). The manifest store is append-only; prior manifests are preserved as ingredient references.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>C2PA Technical Specification is published by the Coalition for Content Provenance and Authenticity. Adopted by Adobe, Microsoft, Google, camera manufacturers, and news organizations.</td></tr>
+<tr><td>Tamper Evidence</td><td>Each manifest is cryptographically signed; any modification invalidates the signature. Hard binding means any modification to the asset content invalidates the active manifest.</td></tr>
+<tr><td>Binding</td><td>Hard binding provides cryptographic linkage between manifest and asset content via content hash. Soft binding provides a defined alternative for non-embeddable assets.</td></tr>
+<tr><td>AI Attribution</td><td>C2PA defines purpose-built assertions for AI generative and training provenance: c2pa.ai.generatedWith, c2pa.training-mining, and related fields for model identity and generation parameters.</td></tr>
+<tr><td>Substantiation</td><td>Manifest store preserves full transformation history. External trust anchors (credential issuers, TSA) are supported. Public verification is possible via the C2PA trust list.</td></tr>
+<tr><td>Interoperability</td><td>Open published specification. Reference implementation (c2patool, c2pa-rs) available under open-source license. Adopted across image, video, and audio tools and camera manufacturers.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-xmp'>XMP (Extensible Metadata Platform)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>xmp</code></td></tr>
+<tr><td>Type</td><td>metadata</td></tr>
+<tr><td>Structure</td><td><code>xml-rdf</code></td></tr>
+<tr><td>Readability</td><td><code>published-standard</code> &mdash; ISO 16684; open standard with no licensing restrictions on implementation or use.</td></tr>
+<tr><td>Verifiability</td><td><code>none</code> &mdash; XMP packets have no integrity protection; properties can be silently overwritten or the entire packet stripped without detection. xmpMM:History entries are advisory and unverified.</td></tr>
+<tr><td>Persistence</td><td>XMP packets can be stripped by processing tools; persistence depends on tool behavior and workflow policy. Sidecar .xmp files can be managed independently.</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>none:</strong> XMP has no native C2PA support. IPTC 2025.1 AI fields carried in XMP namespaces provide structured AI attribution but without cryptographic protection.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td><em>none</em></td></tr>
+</tbody></table>
+<p>XMP (ISO 16684) is an RDF/XML metadata format embedded in host files or stored as standalone .xmp sidecar files. Supports multiple namespaces including Dublin Core (dc:), XMP Basic (xmp:), XMP Media Management (xmpMM:), and IPTC (Iptc4xmpCore/Ext:). The xmpMM:History array provides a conventional provenance record. XMP packets have no integrity protection.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>XMP is defined in ISO 16684. Implemented across all major creative, archival, and repository tools. xmpMM:History and xmpMM:DerivedFrom are recognized provenance fields.</td></tr>
+<tr><td>Tamper Evidence</td><td>XMP packets have no integrity protection. Properties can be silently overwritten or the entire packet stripped.</td></tr>
+<tr><td>Binding</td><td>XMP is structurally embedded in host files but there is no cryptographic binding between XMP content and the primary media data.</td></tr>
+<tr><td>AI Attribution</td><td>IPTC 2025.1 AI fields (AiPrompt, AiSystemUsed, AiSystemVersion) are carried in XMP namespaces. No purpose-built AI attribution fields are defined in the core XMP specification.</td></tr>
+<tr><td>Substantiation</td><td>xmpMM:History and xmpMM:DerivedFrom provide a readable provenance record. XMP sidecar files can be published independently.</td></tr>
+<tr><td>Interoperability</td><td>ISO 16684. Implemented across all major creative, archival, and repository tools.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-exif'>EXIF (Exchangeable Image File Format)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>exif</code></td></tr>
+<tr><td>Type</td><td>metadata</td></tr>
+<tr><td>Structure</td><td><code>binary</code></td></tr>
+<tr><td>Readability</td><td><code>open</code> &mdash; CIPA DC-008; open standard with no licensing restrictions on implementation or use.</td></tr>
+<tr><td>Verifiability</td><td><code>none</code> &mdash; EXIF data has no integrity protection; tags can be silently overwritten or stripped without detection. No provenance chain mechanism in the EXIF specification.</td></tr>
+<tr><td>Persistence</td><td>EXIF data can be stripped by processing tools; persistence depends on tool behavior and workflow policy.</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>none:</strong> EXIF has no native C2PA support. EXIF capture device and datetime fields are referenced by C2PA assertions but are not themselves integrity-protected.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td><em>none</em></td></tr>
+</tbody></table>
+<p>EXIF (CIPA DC-008) is a binary metadata standard using an IFD tag structure. Records capture device identity, camera settings, GPS coordinates, and datetime. Embedded in JPEG APP1, TIFF SubIFD, PNG eXIf chunk, and HEIF. EXIF data has no integrity protection and can be silently overwritten or stripped.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>EXIF is defined by CIPA DC-008. Universally implemented across cameras, phones, and image processing tools. Capture device identity and datetime fields are widely used as provenance indicators.</td></tr>
+<tr><td>Tamper Evidence</td><td>EXIF data has no integrity protection. Tags can be silently overwritten or stripped.</td></tr>
+<tr><td>Binding</td><td>EXIF is structurally embedded in host files but there is no cryptographic binding between EXIF tag values and the image content.</td></tr>
+<tr><td>AI Attribution</td><td>No AI attribution fields are defined in the EXIF specification. Software (0x0131) can record processing tool identity but has no structured AI attribution vocabulary.</td></tr>
+<tr><td>Substantiation</td><td>Capture datetime, GPS, and device fields provide a factual provenance record. No mechanism links EXIF fields to external policies or transformation histories.</td></tr>
+<tr><td>Interoperability</td><td>CIPA DC-008. Universally implemented across cameras, phones, and image processing tools.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-iptc-photo'>IPTC Photo Metadata Standard 2025.1</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>iptc-photo</code></td></tr>
+<tr><td>Type</td><td>metadata</td></tr>
+<tr><td>Structure</td><td><code>xml-xmp</code></td></tr>
+<tr><td>Readability</td><td><code>open</code> &mdash; IPTC Photo Metadata Standard published by IPTC; open standard with no licensing restrictions on implementation or use.</td></tr>
+<tr><td>Verifiability</td><td><code>none</code> &mdash; IPTC fields carried in XMP have no integrity protection; fields can be silently overwritten or stripped without detection.</td></tr>
+<tr><td>Persistence</td><td>IPTC fields carried in XMP can be stripped by processing tools; persistence depends on tool behavior and workflow policy.</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>none:</strong> IPTC Photo Metadata has no native C2PA support. IPTC 2025.1 AI fields provide structured AI attribution in XMP namespaces but without cryptographic protection.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td><em>none</em></td></tr>
+</tbody></table>
+<p>The IPTC Photo Metadata Standard defines a vocabulary of fields carried in XMP namespaces (Iptc4xmpCore, Iptc4xmpExt). Version 2025.1 adds dedicated AI fields: AiPrompt (11.2), AiSystemUsed (11.4), AiSystemVersion (11.5), and DataMiningPermission (11.11). Widely used in photojournalism, stock photography, and digital asset management.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>IPTC Photo Metadata Standard is published by IPTC. Version 2025.1 AI fields are defined in the specification. Widely implemented in photo editing, DAM, and publishing tools.</td></tr>
+<tr><td>Tamper Evidence</td><td>IPTC fields carried in XMP have no integrity protection. Fields can be silently overwritten or stripped.</td></tr>
+<tr><td>Binding</td><td>IPTC fields are structurally embedded via XMP in host files but there is no cryptographic binding between field values and the image content.</td></tr>
+<tr><td>AI Attribution</td><td>Version 2025.1 defines AiPrompt, AiSystemUsed, AiSystemVersion, and DataMiningPermission as purpose-built, standardized AI attribution fields within the IPTC vocabulary.</td></tr>
+<tr><td>Substantiation</td><td>IPTC fields provide a structured, readable provenance record. The standard is publicly documented.</td></tr>
+<tr><td>Interoperability</td><td>Implemented in photo editing, DAM, and publishing tools including Adobe Photoshop, Lightroom, and Capture One.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-premis'>PREMIS (Preservation Metadata)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>premis</code></td></tr>
+<tr><td>Type</td><td>metadata</td></tr>
+<tr><td>Structure</td><td><code>xml</code></td></tr>
+<tr><td>Readability</td><td><code>open</code> &mdash; PREMIS Data Dictionary published by the Library of Congress; open standard with no licensing restrictions on implementation or use.</td></tr>
+<tr><td>Verifiability</td><td><code>integrity-only</code> &mdash; PREMIS XML has no native integrity protection; tamper-evidence depends on the repository or packaging layer (e.g. BagIt fixity, audit logs). Fixity values in objectCharacteristics/fixity link the PREMIS record to a specific file state.</td></tr>
+<tr><td>Persistence</td><td>PREMIS is designed for long-term institutional preservation. Widely implemented in repository systems with long-term support from the Library of Congress.</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>none:</strong> PREMIS has no native C2PA support. PREMIS events map conceptually to C2PA actions (c2pa.created, c2pa.converted, c2pa.edited); PREMIS agent maps to C2PA softwareAgent or person assertions.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td><em>none</em></td></tr>
+</tbody></table>
+<p>PREMIS (Library of Congress) is an XML schema for recording preservation metadata. Models Objects, Events, Agents, and Rights. PREMIS events map to C2PA actions; PREMIS agent maps to C2PA softwareAgent or person assertions. Generated by preservation systems including Archivematica, DSpace, and Fedora. PREMIS XML has no native integrity protection; tamper-evidence depends on the repository or packaging layer.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>PREMIS Data Dictionary is published by the Library of Congress. Implemented in Archivematica, DSpace, Fedora, and other repository systems.</td></tr>
+<tr><td>Tamper Evidence</td><td>PREMIS XML has no integrity protection. Tamper-evidence depends on the repository or packaging layer.</td></tr>
+<tr><td>Binding</td><td>Fixity values in objectCharacteristics/fixity link the PREMIS record to a specific file state. Binding is not cryptographically enforced within the PREMIS document itself.</td></tr>
+<tr><td>AI Attribution</td><td>No purpose-built AI attribution fields in the PREMIS Data Dictionary. Agent/agentType and eventType vocabularies could accommodate AI agents and events by convention.</td></tr>
+<tr><td>Substantiation</td><td>PREMIS event records provide a structured, policy-driven transformation history. The PREMIS Data Dictionary is an open standard. Event records are auditable by repository administrators.</td></tr>
+<tr><td>Interoperability</td><td>Published by the Library of Congress as an open standard. Implemented across major digital preservation systems and repository platforms.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-bagit'>BagIt (RFC 8493)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>bagit</code></td></tr>
+<tr><td>Type</td><td>metadata</td></tr>
+<tr><td>Structure</td><td><code>text-manifest</code></td></tr>
+<tr><td>Readability</td><td><code>open</code> &mdash; IETF RFC 8493; open standard with no licensing restrictions on implementation or use.</td></tr>
+<tr><td>Verifiability</td><td><code>integrity-only</code> &mdash; Manifest files (manifest-*.txt) record checksums for all payload files; tag manifests (tagmanifest-*.txt) record checksums for all tag files. Any modification to a payload or tag file produces a checksum mismatch detectable by bag validation. No signing mechanism; the manifest files themselves could be replaced along with modified payload files without detection at the BagIt level.</td></tr>
+<tr><td>Persistence</td><td>BagIt is widely adopted in digital preservation, library, and archival transfer workflows. Long-term support from the Library of Congress and IETF standardization.</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>none:</strong> BagIt has no native C2PA support. C2PA sidecar files can be included as payload files within a bag; bag-info.txt custom fields could carry AI processing notes by convention.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td><em>none</em></td></tr>
+</tbody></table>
+<p>BagIt (IETF RFC 8493) is a hierarchical file packaging format for reliable digital transfer and storage. A bag contains a payload directory, manifest files recording checksums for all payload files, tag files carrying descriptive metadata, and tag manifest files recording checksums for tag files. Operates at the package level; does not interact with file-level metadata mechanisms. Supported algorithms include MD5, SHA-1, SHA-256, and SHA-512.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>BagIt is defined in IETF RFC 8493. Widely adopted in digital preservation, library, and archival transfer workflows.</td></tr>
+<tr><td>Tamper Evidence</td><td>Manifest checksums detect modification of any payload or tag file. No signing mechanism at the BagIt level.</td></tr>
+<tr><td>Binding</td><td>Manifest entries bind each checksum to a specific file path within the bag. No cryptographic binding between the bag as a whole and an external identity or signing authority.</td></tr>
+<tr><td>AI Attribution</td><td>No AI attribution fields in the BagIt specification. bag-info.txt custom fields could carry AI processing notes by convention.</td></tr>
+<tr><td>Substantiation</td><td>Manifest files provide a verifiable, reproducible integrity record for all payload and tag files. bag-info.txt carries descriptive provenance fields.</td></tr>
+<tr><td>Interoperability</td><td>IETF RFC 8493. Implemented across digital preservation, library, and archival transfer tools and systems.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id='format-mets'>METS (Metadata Encoding and Transmission Standard)</h2>
+<table><tbody><tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>ID</td><td><code>mets</code></td></tr>
+<tr><td>Type</td><td>metadata</td></tr>
+<tr><td>Structure</td><td><code>xml</code></td></tr>
+<tr><td>Readability</td><td><code>open</code> &mdash; METS schema published by the Library of Congress; open standard with no licensing restrictions on implementation or use.</td></tr>
+<tr><td>Verifiability</td><td><code>integrity-only</code> &mdash; METS XML has no native integrity protection; tamper-evidence depends on the repository or packaging layer. METS can carry fixity values for described files in the fileSec/fileGrp/file/FLocat elements.</td></tr>
+<tr><td>Persistence</td><td>METS is designed for long-term institutional preservation. Widely implemented in repository systems with long-term support from the Library of Congress.</td></tr>
+<tr><td>C2PA Support</td><td><ul><li><strong>none:</strong> METS has no native C2PA support. METS can reference C2PA sidecar files as file objects within the fileSec; PREMIS events carried in the amdSec can document C2PA-related processing actions.</li></ul></td></tr>
+<tr><td>Mechanisms</td><td><em>none</em></td></tr>
+</tbody></table>
+<p>METS (Library of Congress) is an XML standard for encoding descriptive, administrative, and structural metadata for digital objects. Sections include dmdSec (descriptive), amdSec (administrative, including PREMIS), fileSec (file inventory), and structMap (structural). Used by Archivematica, DSpace, and many repository systems. METS XML has no native integrity protection; tamper-evidence depends on the repository or packaging layer.</p>
+<div class='tcr'><h3>TCR4CAP Comments</h3>
+<table><tbody><tr><th>Dimension</th><th>Observation</th></tr>
+<tr><td>Awareness</td><td>METS schema is published by the Library of Congress. Implemented in Archivematica, DSpace, and other repository systems.</td></tr>
+<tr><td>Tamper Evidence</td><td>METS XML has no integrity protection. Tamper-evidence depends on the repository or packaging layer.</td></tr>
+<tr><td>Binding</td><td>METS fileSec references described files by path and can carry fixity values. Binding is not cryptographically enforced within the METS document itself.</td></tr>
+<tr><td>AI Attribution</td><td>No purpose-built AI attribution fields in the METS schema. PREMIS events in the amdSec could document AI processing actions by convention.</td></tr>
+<tr><td>Substantiation</td><td>METS provides a structured, comprehensive metadata record for digital objects. Widely supported by repository systems.</td></tr>
+<tr><td>Interoperability</td><td>Published by the Library of Congress as an open standard. Implemented across major digital preservation systems and repository platforms.</td></tr>
+</tbody></table></div>
+<hr>
+</body></html>
