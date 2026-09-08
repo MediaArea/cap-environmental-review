@@ -67,7 +67,7 @@ bin/assemble-pdf.sh
 
 ## TCR4CAP
 
-The registries evaluate each entry against criteria aligned with FADGI's [Tiered Community Recommendations for Content Authenticity and Provenance](https://www.digitizationguidelines.gov/guidelines/tcr4cap/FADGI-TCR4CAP-v01-PublicCommentDraft.pdf) (TCR4CAP).
+The registries evaluate each entry against criteria aligned with FADGI's [Tiered Community Recommendations for Content Authenticity and Provenance](https://www.digitizationguidelines.gov/guidelines/tcr-cap.html) (TCR4CAP).
 
 ## License
 
